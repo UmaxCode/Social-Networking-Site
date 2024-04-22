@@ -1,0 +1,13 @@
+# backend
+**/.idea
+**/.mvn
+**/HELP.md
+**/mvnw
+**/mvnw.cmd
+**/static
+**/target
+
+# frontend
+**/node_modules
+**/public
+**/assets
