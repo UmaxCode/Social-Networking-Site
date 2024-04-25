@@ -6,6 +6,7 @@
 **/mvnw.cmd
 **/static
 **/target
+**/.env
 
 # frontend
 **/node_modules
