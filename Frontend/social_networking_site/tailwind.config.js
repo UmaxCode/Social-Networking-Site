@@ -2,7 +2,14 @@
 export default {
   content: ["./**/*.html", "./src/**/*.tsx"],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        telegram: {
+          default: "#0088CC",
+          light: "#179CDE",
+        },
+      },
+    },
   },
   plugins: [],
 };
