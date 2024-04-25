@@ -34,11 +34,9 @@ public class UserAuthService {
 
     public String register(UserCreationRequest userData) throws MessagingException, IOException {
 
-        User user = null;
        try{
            // TODO: input validation
-
-            user = User.builder()
+            User user = User.builder()
                    .fullName(userData.fullname())
                    .username(userData.username())
                    .email(userData.email())
@@ -69,8 +67,7 @@ public class UserAuthService {
        }catch (DataIntegrityViolationException err){
              throw new IllegalArgumentException("username or email is already in use.");
        }catch (MessagingException err){
-           this.userRepository.delete(user);
-           throw new IllegalArgumentException("error occurred when sending email.");
+           throw new IllegalArgumentException("error occurred when sending email. Email server must be down.");
        }
 
     }
