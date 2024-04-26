@@ -43,9 +43,9 @@ const Signin = () => {
         .then((data) => {
           if (data.token) {
             localStorage.setItem("token", data.token);
-            console.log(data);
             setFormInput(userData);
-            navigate("/chat");
+            toast.success(`${data.message}`);
+            setTimeout(() => navigate("/chat"), 3000);
           } else {
             console.log(data.error);
             toast.error(data.error);

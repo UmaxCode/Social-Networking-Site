@@ -34,9 +34,6 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<Contact> contacts;
 
-    @OneToOne(mappedBy = "user")
-    private Token token;
-
     @Enumerated(EnumType.STRING)
     private Role role;
 

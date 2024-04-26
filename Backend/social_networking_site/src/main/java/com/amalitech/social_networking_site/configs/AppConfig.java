@@ -1,8 +1,6 @@
 package com.amalitech.social_networking_site.configs;
 
-import com.amalitech.social_networking_site.entities.Token;
 import com.amalitech.social_networking_site.entities.userDetials.UserDetailsImpl;
-import com.amalitech.social_networking_site.repositories.TokenRepository;
 import com.amalitech.social_networking_site.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -14,14 +12,12 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 @Configuration
 @RequiredArgsConstructor
 public class AppConfig {
 
     private final UserRepository userRepository;
-    private final TokenRepository tokenRepository;
 
 
     @Bean
@@ -51,25 +47,4 @@ public class AppConfig {
 
     }
 
-    @Bean
-    public LogoutHandler logoutHandler() {
-        return (request, response, authentication) -> {
-
-            final String authHeader = request.getHeader("Authorization");
-            final String authToken;
-
-            if (authHeader == null || !authHeader.startsWith("Bearer")) {
-                return;
-            }
-
-            authToken = authHeader.substring(7);
-
-            Token token = tokenRepository.findByToken(authToken).orElseThrow();
-
-            token.setIsRevoked(true);
-
-            tokenRepository.save(token);
-
-        };
-    }
 }

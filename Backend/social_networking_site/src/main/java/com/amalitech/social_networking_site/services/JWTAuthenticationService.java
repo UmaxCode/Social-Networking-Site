@@ -1,6 +1,5 @@
 package com.amalitech.social_networking_site.services;
 
-import com.amalitech.social_networking_site.repositories.TokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -16,8 +15,6 @@ import java.util.function.Function;
 @Service
 @RequiredArgsConstructor
 public class JWTAuthenticationService {
-
-    private final TokenRepository tokenRepository;
 
     @Value("${spring.security.token.secretKey}")
     private String jwtAuthSecretKey;
@@ -39,7 +36,7 @@ public class JWTAuthenticationService {
         return Jwts.builder()
                 .subject(email)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + this.jwtAuthExpiredTime))
+                .expiration(new Date(System.currentTimeMillis() + jwtAuthExpiredTime))
                 .signWith(getSignInKey())
                 .compact();
     }
@@ -47,21 +44,17 @@ public class JWTAuthenticationService {
 
     public boolean isValidToken(String token) {
 
-        return !isTokenExpired(token) && !isTokenRevoked(token);
+        return !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {
         return extractExpirationDate(token).before(new Date());
     }
 
-    private boolean isTokenRevoked(String token) {
-        return this.tokenRepository.findByToken(token).isEmpty();
-    }
-
 
     private SecretKey getSignInKey() {
 
-        byte[] keyBytes = Decoders.BASE64.decode(this.jwtAuthSecretKey);
+        byte[] keyBytes = Decoders.BASE64.decode(jwtAuthSecretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
