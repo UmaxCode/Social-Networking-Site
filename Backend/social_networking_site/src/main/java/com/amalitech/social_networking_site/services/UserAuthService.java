@@ -4,9 +4,9 @@ import com.amalitech.social_networking_site.dto.requests.auth.OauthUserCreationR
 import com.amalitech.social_networking_site.dto.requests.auth.UserAuthenticationRequest;
 import com.amalitech.social_networking_site.dto.requests.auth.UserCreationRequest;
 import com.amalitech.social_networking_site.dto.response.UserAuthenticationResponse;
-import com.amalitech.social_networking_site.entities.Role;
 import com.amalitech.social_networking_site.entities.User;
 import com.amalitech.social_networking_site.repositories.UserRepository;
+import static  com.amalitech.social_networking_site.utilities.Utilities.*;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -45,9 +45,9 @@ public class UserAuthService {
 
             User savedUser = userRepository.save(user);
 
-            String generatedToken = jwtAuthenticationService.generateToken(savedUser.getEmail());
+            String generatedToken = jwtAuthenticationService.generateToken(savedUser.getEmail(), TokenSubject.EMAIL_VERIFICATION);
 
-            emailService.emailVerification(savedUser.getEmail(), savedUser.getUsername(), generatedToken);
+            emailService.sendMail("Email Account Verification", "email_verification.html", savedUser.getEmail(), savedUser.getUsername(), generatedToken);
 
             return String.format("Account created successfully! We've sent a verification link to you email - %s", savedUser.getEmail());
         } catch (DataIntegrityViolationException err) {
@@ -77,7 +77,7 @@ public class UserAuthService {
                 )
         );
 
-        String generatedToken = jwtAuthenticationService.generateToken(userData.email());
+        String generatedToken = jwtAuthenticationService.generateToken(userData.email(), TokenSubject.LOGIN);
 
 
         return new UserAuthenticationResponse("You are logged in", generatedToken);
@@ -93,20 +93,47 @@ public class UserAuthService {
                     .email(oauthUserData.email())
                     .fullName(oauthUserData.fullname())
                     .isActive(true)
+                    .username(oauthUserData.fullname().split(" ")[1]+"G")
                     .role(Role.REG_USER)
                     .build();
             userRepository.save(user);
         }
 
-        String generatedToken = jwtAuthenticationService.generateToken(oauthUserData.email());
+        String generatedToken = jwtAuthenticationService.generateToken(oauthUserData.email(),TokenSubject.LOGIN);
 
         return new UserAuthenticationResponse("Access granted. You're now logged in.", generatedToken);
 
     }
 
+
+    public String passwordReset(String email) throws MessagingException, IOException {
+
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+
+        if(optionalUser.isEmpty()){
+            throw new IllegalArgumentException("Sorry, you don't have and account with us. You need to sign up.");
+        }
+
+        User user = optionalUser.get();
+
+        if(!user.getIsActive()){
+            throw new IllegalArgumentException("Sorry, your account is not verified");
+        }
+
+        String generatedPassword = generatePassword();
+
+        emailService.sendMail("Password Reset", "password_reset.html", user.getEmail(), user.getUsername(), generatedPassword);
+
+        user.setPassword(passwordEncoder.encode(generatedPassword));
+        userRepository.save(user);
+
+        return "The password reset request was successful. Please check your email inbox for further instructions.";
+
+    }
+
     public void emailVerification(String token) {
 
-        if (jwtAuthenticationService.isValidToken(token)) {
+        if (jwtAuthenticationService.isValidToken(token, TokenSubject.EMAIL_VERIFICATION)) {
 
             User user = userRepository.findByEmail(jwtAuthenticationService.extractUserEmail(token)).orElseThrow();
 

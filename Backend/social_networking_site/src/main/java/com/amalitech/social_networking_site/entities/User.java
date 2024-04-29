@@ -1,6 +1,7 @@
 package com.amalitech.social_networking_site.entities;
 
 
+import static com.amalitech.social_networking_site.utilities.Utilities.*;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

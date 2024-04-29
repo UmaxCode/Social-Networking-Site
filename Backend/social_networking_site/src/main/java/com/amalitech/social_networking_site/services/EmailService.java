@@ -21,14 +21,16 @@ public class EmailService {
 
 
     @Async
-    public void emailVerification(String to, String username, String token) throws MessagingException, IOException {
+    public void sendMail(String subject, String emailTemplate, String to, String username, String token) throws MessagingException, IOException {
 
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         mimeMessage.setFrom(new InternetAddress("umaxcodelearn@gmail.com"));
         mimeMessage.setRecipients(MimeMessage.RecipientType.TO, to);
-        mimeMessage.setSubject("Email Verification");
+        mimeMessage.setSubject(subject);
 
-        String htmlTemplate = readFile("email_verification.html");
+//        String htmlTemplate = readFile("email_verification.html");
+        String htmlTemplate = readFile(emailTemplate);
+
         htmlTemplate = htmlTemplate.replace("${username}", username);
         htmlTemplate = htmlTemplate.replace("${token}", token);
 

@@ -1,6 +1,7 @@
 package com.amalitech.social_networking_site.filters;
 
 import com.amalitech.social_networking_site.services.JWTAuthenticationService;
+import static com.amalitech.social_networking_site.utilities.Utilities.*;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,7 +42,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
-            if (jwtAuthenticationService.isValidToken(jwtToken)) {
+            if (jwtAuthenticationService.isValidToken(jwtToken, TokenSubject.LOGIN)) {
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,

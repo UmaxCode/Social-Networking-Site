@@ -1,6 +1,5 @@
 package com.amalitech.social_networking_site.entities.userDetials;
 
-import com.amalitech.social_networking_site.entities.Role;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -9,6 +8,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+
+import static com.amalitech.social_networking_site.utilities.Utilities.Role;
 
 @RequiredArgsConstructor
 @Builder

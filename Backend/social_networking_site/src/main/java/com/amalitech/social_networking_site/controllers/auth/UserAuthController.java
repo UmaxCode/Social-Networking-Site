@@ -1,6 +1,7 @@
 package com.amalitech.social_networking_site.controllers.auth;
 
 import com.amalitech.social_networking_site.dto.requests.auth.OauthUserCreationRequest;
+import com.amalitech.social_networking_site.dto.requests.auth.PasswordResetRequest;
 import com.amalitech.social_networking_site.dto.requests.auth.UserAuthenticationRequest;
 import com.amalitech.social_networking_site.dto.requests.auth.UserCreationRequest;
 import com.amalitech.social_networking_site.dto.response.ErrorMessage;
@@ -51,17 +52,28 @@ public class UserAuthController {
             redirectView.setUrl("http://localhost:3000/");
             return redirectView;
         } catch (Exception err) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,err.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, err.getMessage());
         }
     }
 
-    @PostMapping("/oauth/registration")
-    public ResponseEntity<?> OauthUserRegistration(@RequestBody OauthUserCreationRequest oauthData){
+    @PutMapping("/password_reset")
+    public ResponseEntity<?> passwordReset(@RequestBody PasswordResetRequest userData){
 
         try {
-            var response = userAuthService.OauthLoginService(oauthData);
-            return ResponseEntity.ok(response);
+             var message = userAuthService.passwordReset(userData.email());
+             return ResponseEntity.ok(new SuccessMessage(message));
         }catch (Exception err){
+            return ResponseEntity.status(400).body(new ErrorMessage(err.getMessage()));
+        }
+
+    }
+
+    @PostMapping("/oauth/registration")
+    public ResponseEntity<?> OauthUserRegistration(@RequestBody OauthUserCreationRequest authData) {
+        try {
+            var response = userAuthService.OauthLoginService(authData);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception err) {
             return ResponseEntity.status(400).body(new ErrorMessage(err.getMessage()));
         }
     }

@@ -1,5 +1,7 @@
 package com.amalitech.social_networking_site.services;
 
+import static com.amalitech.social_networking_site.utilities.Utilities.*;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.function.Function;
 
 @Service
@@ -24,31 +27,40 @@ public class JWTAuthenticationService {
 
     public String extractUserEmail(String token) {
 
-        return extractClaim(token, Claims::getSubject);
+        return extractClaim(token, (claims)-> claims.get("email", String.class) );
     }
 
     private Date extractExpirationDate(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    public String generateToken(String email) {
+
+    public String generateToken(String email, TokenSubject subject) {
+
+        HashMap<String, String> claims = new HashMap<>();
+        claims.put("email", email);
+        claims.put("role", Role.REG_USER.name());
 
         return Jwts.builder()
-                .subject(email)
+                .claims(claims)
+                .subject(subject.name())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtAuthExpiredTime))
                 .signWith(getSignInKey())
                 .compact();
     }
 
+    public boolean isValidToken(String token, TokenSubject tokenSubject) {
 
-    public boolean isValidToken(String token) {
-
-        return !isTokenExpired(token);
+        return !isTokenExpired(token) && getTokenSubject(token).equals(tokenSubject.name());
     }
 
     private boolean isTokenExpired(String token) {
         return extractExpirationDate(token).before(new Date());
+    }
+
+    private String getTokenSubject(String token){
+        return extractClaim(token, (Claims::getSubject));
     }
 
 
