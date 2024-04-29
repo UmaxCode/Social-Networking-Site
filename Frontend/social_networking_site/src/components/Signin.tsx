@@ -91,14 +91,17 @@ const Signin = () => {
             />
             <div className="text-red-400 px-2">{formErrors.password}</div>
           </div>
-          <Link to="" className="text-blue-500 text-center block">
+          <Link
+            to="forgot-password"
+            className="text-blue-500 text-center block mb-4"
+          >
             Forgot password?
           </Link>
           <SiginSignupButton text="Login" reqSent={processReq} />
         </form>
         <p className="flex gap-2 justify-center my-3">
           Don't have an account?
-          <Link to="signup" className="text-blue-500 t block">
+          <Link to="signup" className="text-blue-500">
             Signup
           </Link>
         </p>

@@ -49,7 +49,10 @@ const AlternateAuthentication = () => {
         <span className="h-[1px] w-[45%] bg-gray-400"></span>
       </p>
 
-      <button className="w-[100%] bg-blue-900 text-white py-2 px-4 rounded text-center">
+      <button
+        onClick={() => {}}
+        className="w-[100%] bg-blue-900 text-white py-2 px-4 rounded text-center"
+      >
         <i className="bi bi-facebook me-3"></i>
         <span>Login with Facebook</span>
       </button>

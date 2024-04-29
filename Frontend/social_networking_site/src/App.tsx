@@ -8,6 +8,7 @@ import AuthenticationWrapper from "./containers/AuthenticationWrapper";
 import Signin from "./components/Signin";
 import Signup from "./components/Signup";
 import ChatContainer from "./containers/ChatContainer";
+import ForgotPassword from "./components/ForgotPassword";
 
 function App() {
   const router = createBrowserRouter(
@@ -20,6 +21,7 @@ function App() {
         <Route path="/" element={<AuthenticationWrapper />}>
           <Route index element={<Signin />} />
           <Route path="signup" element={<Signup />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
         </Route>
       </Route>
     )
