@@ -1,11 +1,47 @@
-import { Fragment, useState, useRef } from "react";
+import { Fragment, useState, useRef, useEffect } from "react";
 import ChatInput from "./ChatInput";
 import { Link, useOutletContext } from "react-router-dom";
 import { Dialog, Transition } from "@headlessui/react";
 
+import { AuthData } from "../contexts/AuthWrapper";
+
 const MessageSection = () => {
-  const chat = useOutletContext();
-  console.log(chat);
+  const [chat, stompClient] = useOutletContext();
+
+  const { authenticate } = AuthData();
+
+  const [chatMessages, setChatMessages] = useState([]);
+
+  useEffect(() => {
+    async function loadUserMessages() {
+      const url = `http://localhost:3001/messages/${chat[0]?.senderEmail}/${chat[0]?.receiverEmail}`;
+
+      console.log(url);
+      try {
+        const response = await fetch(url, {
+          method: "Get",
+          headers: {
+            Authorization: `Bearer ${authenticate.token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error();
+        }
+
+        console.log(response);
+
+        // const chat = await response.json();
+        // setChatMessages([...chat]);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    loadUserMessages();
+  }, [chat]);
+
+  // console.log(chat);
 
   const inputFile = useRef(null);
 
@@ -13,6 +49,17 @@ const MessageSection = () => {
     fileSeleted: false,
     file: null,
   });
+
+  function sendMessage(message: string) {
+    if (message.trim() && stompClient) {
+      const chatMessage = {
+        senderEmail,
+        receiverEmail,
+        message,
+      };
+      stompClient.send("/app/chat", {}, JSON.stringify(chatMessage));
+    }
+  }
 
   const openModal = (event: any) => {
     console.log("Open file");
@@ -38,14 +85,14 @@ const MessageSection = () => {
     <>
       <div className=" h-[100%] rounded flex flex-col gap-3 bg-white sm:bg-transparent p-2 sm:p-0 sm:relative fixed inset-0 z-10">
         <div className="flex items-center bg-telegram-default sm:bg-white py-2 px-3 rounded shadow-sm">
-          <Link to={`/chats`} className="sm:hidden">
+          <Link to={`..`} className="sm:hidden">
             <i className="bi bi-arrow-left me-3 text-white"></i>
           </Link>
           <div className="me-3 h-[30px] w-[30px] relative">
             <img src="" alt="" className="h-[100%] w-[100%] rounded-full" />
             <div
               className={`absolute h-[6px] w-[6px] ${
-                chat.status ? "bg-green-400" : "bg-gray-300"
+                chat.online ? "bg-green-400" : "bg-gray-300"
               } rounded-full bottom-0 right-0`}
             ></div>
           </div>
@@ -58,13 +105,8 @@ const MessageSection = () => {
         </div>
         <div className="flex-1 sm:bg-white bg-gray-100 rounded shadow-sm p-2 overflow-y-auto">
           <div className="">
-            {chat.messages.map((mes, index) => {
-              return (
-                <div key={index}>
-                  <p>{mes.sender}</p>
-                  <p className="text-right">{mes.receiver}</p>
-                </div>
-              );
+            {chatMessages?.map((message, index) => {
+              return <div key={index}>{message}</div>;
             })}
           </div>
         </div>
@@ -90,7 +132,7 @@ const MessageSection = () => {
             <div className="flex-1">
               <ChatInput
                 icon="bi bi-send-fill px-2 bg-telegram-default text-white rounded"
-                action={() => {}}
+                action={sendMessage}
                 name="search"
               />
             </div>

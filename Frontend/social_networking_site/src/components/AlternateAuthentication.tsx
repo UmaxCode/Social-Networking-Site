@@ -1,44 +1,37 @@
 import { useGoogleLogin } from "@react-oauth/google";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { AuthData } from "../contexts/AuthWrapper";
 
 const AlternateAuthentication = () => {
   const navigate = useNavigate();
 
+  const { login } = AuthData();
+
   const loginGoogleOauth = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-        headers: {
-          Authorization: `${tokenResponse.token_type} ${tokenResponse.access_token}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          fetch("http://localhost:3001/auth/oauth/registration", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              fullname: `${data.name}`,
-              email: `${data.email}`,
-              picture: `${data.picture}`,
-            }),
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.message) {
-                localStorage.setItem("token", data.token);
-                toast.success(data.message);
-                setTimeout(() => {
-                  navigate("/chat");
-                }, 3000);
-              } else {
-                toast.error(data.error);
-              }
-            });
-        });
+    onSuccess: (authResponse) => {
+      async function returnCode() {
+        try {
+          const response = await fetch(
+            `http://localhost:3001/auth/oauth_google_callback?code=${authResponse.code}`
+          );
+          console.log(response);
+          if (!response.ok) {
+            throw new Error("DFDFDFDF");
+          }
+          const data = await response.json();
+          console.log(data);
+          login(data.token);
+          toast.success(`${data.message}`);
+          setTimeout(() => navigate(`/${data.username}/chats`), 3000);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      returnCode();
     },
+    flow: "auth-code",
   });
 
   return (

@@ -6,6 +6,8 @@ import SiginSignupButton from "./SiginSignupButton";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
+import { AuthData } from "../contexts/AuthWrapper";
+
 const userData = {
   email: "",
   password: "",
@@ -14,6 +16,8 @@ const userData = {
 const Signin = () => {
   const [formInput, setFormInput, validator, onFormChangeInput, formErrors] =
     useFormBinding(userData);
+
+  const { login } = AuthData();
 
   const [processReq, setProcessReq] = useState(false);
 
@@ -42,10 +46,10 @@ const Signin = () => {
         })
         .then((data) => {
           if (data.token) {
-            localStorage.setItem("token", data.token);
+            login(data.token);
             setFormInput(userData);
             toast.success(`${data.message}`);
-            setTimeout(() => navigate("/chat"), 3000);
+            setTimeout(() => navigate(`${data.username}/chats`), 3000);
           } else {
             console.log(data.error);
             toast.error(data.error);

@@ -40,7 +40,7 @@ export const useFormBinding = (initialFormInput: any): any => {
 
     if (data.email?.length === 0) {
       formValidation.email = "email is required.";
-    } else {
+    } else if (data.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const isValidEmail = emailRegex.test(data.email as string);
       if (!isValidEmail) {
@@ -48,10 +48,17 @@ export const useFormBinding = (initialFormInput: any): any => {
       }
     }
 
-    if (data.password?.length === 0) {
+    if (data.password?.length === 0 || data.oldpassword?.length === 0) {
       formValidation.password = "password is required.";
-    } else if (data.password ? data.password.length < 8 : null) {
+      formValidation.oldpassword = "old password is required";
+    } else if (
+      data.password || data.oldpassword
+        ? data.password.length < 8 || data.oldpassword < 8
+        : null
+    ) {
       formValidation.password = "password must be more 7 characters.";
+      formValidation.oldpassword =
+        "old password must be more than 7 characters";
     } else {
       if (data.conpassword?.length === 0) {
         formValidation.conpassword = "password confirmation required.";
@@ -62,6 +69,8 @@ export const useFormBinding = (initialFormInput: any): any => {
         formValidation.conpassword = "passwords do not match.";
       }
     }
+
+    console.log(formValidation);
 
     if (Object.keys(formValidation).length) {
       setFormErrors(formValidation);

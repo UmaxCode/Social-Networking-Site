@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { ChangeEvent, FormEvent, useRef, useState } from "react";
 
 type ChatInputProp = {
   icon: string;
   name: string;
-  action: () => void;
+  action: (data: string) => void;
 };
 
 const ChatInput = ({ icon, name, action }: ChatInputProp) => {
-  const [data, setData] = useState("");
+  const [data, setData] = useState<string>("");
+
+  const inputElement = useRef(null);
 
   const onChangeSearchInput = (event: ChangeEvent<HTMLInputElement>) => {
     setData(event.target.value);
@@ -15,6 +17,7 @@ const ChatInput = ({ icon, name, action }: ChatInputProp) => {
   return (
     <div className="relative">
       <input
+        ref={inputElement}
         type="text"
         name={name}
         value={data}
@@ -24,7 +27,13 @@ const ChatInput = ({ icon, name, action }: ChatInputProp) => {
         onChange={onChangeSearchInput}
       />
       <div className="inline-flex justify-center items-center h-[100%] absolute end-2">
-        <button onClick={action} className={icon}></button>
+        <button
+          onClick={() => {
+            action(data);
+            inputElement.current.value = "";
+          }}
+          className={icon}
+        ></button>
       </div>
     </div>
   );
