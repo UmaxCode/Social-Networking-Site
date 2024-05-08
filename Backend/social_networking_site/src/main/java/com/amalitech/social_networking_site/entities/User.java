@@ -1,14 +1,19 @@
 package com.amalitech.social_networking_site.entities;
 
 
-import static com.amalitech.social_networking_site.utilities.Utilities.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.CascadeType;
 
 import java.util.List;
+
+import static com.amalitech.social_networking_site.utilities.Utilities.Role;
+
 
 @Builder
 @Data
@@ -32,15 +37,24 @@ public class User {
 
     private String password;
 
-    @OneToMany(mappedBy = "user")
-    private List<Contact> contacts;
-
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @OneToOne(mappedBy = "user")
+    @JsonManagedReference
+    @Cascade(CascadeType.ALL )
+    private UserProfile profile;
+
     private Boolean isActive;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "owner")
+    @JsonManagedReference
+    @Cascade(CascadeType.ALL)
+    private List<Contact> contacts;
+
+    @OneToMany(mappedBy = "sender")
+    @JsonManagedReference
+    @Cascade(CascadeType.ALL)
     private List<Invite> invites;
 
     @Override

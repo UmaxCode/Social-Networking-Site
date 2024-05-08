@@ -20,6 +20,12 @@ public class Utilities {
         LOGIN
     }
 
+   public enum ContactState {
+        BLACKLIST,
+
+        WHITELIST
+    }
+
     static private String getRandomChars(String text, int size){
 
         SecureRandom secureRandom = new SecureRandom();

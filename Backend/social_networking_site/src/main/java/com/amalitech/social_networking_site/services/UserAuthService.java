@@ -1,32 +1,52 @@
 package com.amalitech.social_networking_site.services;
 
-import com.amalitech.social_networking_site.dto.requests.auth.OauthUserCreationRequest;
 import com.amalitech.social_networking_site.dto.requests.auth.UserAuthenticationRequest;
 import com.amalitech.social_networking_site.dto.requests.auth.UserCreationRequest;
 import com.amalitech.social_networking_site.dto.response.UserAuthenticationResponse;
 import com.amalitech.social_networking_site.entities.User;
+import com.amalitech.social_networking_site.entities.UserProfile;
+import com.amalitech.social_networking_site.repositories.ProfileRepository;
 import com.amalitech.social_networking_site.repositories.UserRepository;
-import static  com.amalitech.social_networking_site.utilities.Utilities.*;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.UUID;
+
+import static com.amalitech.social_networking_site.utilities.Utilities.*;
 
 @Service
 @RequiredArgsConstructor
 public class UserAuthService {
 
     private final UserRepository userRepository;
+    private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JWTAuthenticationService jwtAuthenticationService;
     private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
+    private final JwtDecoder jwtDecoder;
+
+    @Value("${spring.security.oauth2.client.registration.google.clientId}")
+    private String clientId;
+
+    @Value("${spring.security.oauth2.client.registration.google.clientSecret}")
+    private String clientSecret;
+    @Value("${frontend.url}")
+    private String frontEndUrl;
 
 
     public String register(UserCreationRequest userData) throws MessagingException, IOException {
@@ -45,15 +65,22 @@ public class UserAuthService {
 
             User savedUser = userRepository.save(user);
 
+            var profile = UserProfile.builder()
+                    .user(savedUser)
+
+                    .build();
+
+            profileRepository.save(profile);
+
             String generatedToken = jwtAuthenticationService.generateToken(savedUser.getEmail(), TokenSubject.EMAIL_VERIFICATION);
 
-            emailService.sendMail("Email Account Verification", "email_verification.html", savedUser.getEmail(), savedUser.getUsername(), generatedToken);
+            emailService.sendMail("email Account Verification", "email_verification.html", savedUser.getEmail(), savedUser.getUsername(), generatedToken);
 
             return String.format("Account created successfully! We've sent a verification link to you email - %s", savedUser.getEmail());
         } catch (DataIntegrityViolationException err) {
             throw new IllegalArgumentException("username or email is already in use.");
         } catch (MessagingException err) {
-            throw new IllegalArgumentException("error occurred when sending email. Email server must be down.");
+            throw new IllegalArgumentException("error occurred when sending email. email server must be down.");
         }
 
     }
@@ -66,7 +93,7 @@ public class UserAuthService {
             throw new IllegalArgumentException("Your account is not verified");
         }
 
-        if(user.getPassword() == null){
+        if (user.getPassword() == null) {
             throw new IllegalArgumentException("Your haven't set a password for your account. Click forgot password link to set it now!");
         }
 
@@ -80,28 +107,78 @@ public class UserAuthService {
         String generatedToken = jwtAuthenticationService.generateToken(userData.email(), TokenSubject.LOGIN);
 
 
-        return new UserAuthenticationResponse("You are logged in", generatedToken);
+        return new UserAuthenticationResponse("You are logged in", generatedToken, user.getUsername());
     }
 
 
-    public UserAuthenticationResponse OauthLoginService(OauthUserCreationRequest oauthUserData) {
+    private UserAuthenticationResponse registerOauthUser (String token){
 
-        Optional<User> optionalUser = userRepository.findByEmail(oauthUserData.email());
+
+       var  claims =  jwtDecoder.decode(token);
+
+       var body = claims.getClaims();
+
+        String email = String.valueOf(body.get("email"));
+
+        String firstname = String.valueOf(body.get("given_name"));
+
+        String lastname = String.valueOf(body.get("family_name"));
+
+        String picture = String.valueOf(body.get("picture"));
+
+
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+
+        String username = null;
 
         if (optionalUser.isEmpty()) {
+
             User user = User.builder()
-                    .email(oauthUserData.email())
-                    .fullName(oauthUserData.fullname())
+                    .email(email)
+                    .fullName(firstname + " " + lastname)
                     .isActive(true)
-                    .username(oauthUserData.fullname().split(" ")[1]+"G")
+                    .username(firstname + (UUID.randomUUID()).toString().split("-")[0])
                     .role(Role.REG_USER)
                     .build();
-            userRepository.save(user);
+            var savedUser = userRepository.save(user);
+
+            username = user.getUsername();
+
+            var profile = UserProfile.builder()
+                    .filePath(picture)
+                    .user(savedUser)
+                    .build();
+
+            profileRepository.save(profile);
+
+
         }
 
-        String generatedToken = jwtAuthenticationService.generateToken(oauthUserData.email(),TokenSubject.LOGIN);
+        String generatedToken = jwtAuthenticationService.generateToken(email, TokenSubject.LOGIN);
 
-        return new UserAuthenticationResponse("Access granted. You're now logged in.", generatedToken);
+        return new UserAuthenticationResponse("Access granted. You're now logged in.", generatedToken, optionalUser.isPresent()? optionalUser.get().getUsername(): username);
+
+    }
+
+
+    public UserAuthenticationResponse handleGoogleCallback(String code) {
+
+        try {
+            String token = new GoogleAuthorizationCodeTokenRequest(
+                    new NetHttpTransport(), new GsonFactory(),
+                    clientId,
+                    clientSecret,
+                    code,
+                    frontEndUrl
+            ).execute().getIdToken();
+
+
+            return registerOauthUser(token);
+
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Google OAuth failed", e);
+        }
 
     }
 
@@ -110,13 +187,13 @@ public class UserAuthService {
 
         Optional<User> optionalUser = userRepository.findByEmail(email);
 
-        if(optionalUser.isEmpty()){
+        if (optionalUser.isEmpty()) {
             throw new IllegalArgumentException("Sorry, you don't have and account with us. You need to sign up.");
         }
 
         User user = optionalUser.get();
 
-        if(!user.getIsActive()){
+        if (!user.getIsActive()) {
             throw new IllegalArgumentException("Sorry, your account is not verified");
         }
 

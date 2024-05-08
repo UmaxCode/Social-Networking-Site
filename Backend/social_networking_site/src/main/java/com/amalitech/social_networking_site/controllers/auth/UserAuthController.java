@@ -1,6 +1,5 @@
 package com.amalitech.social_networking_site.controllers.auth;
 
-import com.amalitech.social_networking_site.dto.requests.auth.OauthUserCreationRequest;
 import com.amalitech.social_networking_site.dto.requests.auth.PasswordResetRequest;
 import com.amalitech.social_networking_site.dto.requests.auth.UserAuthenticationRequest;
 import com.amalitech.social_networking_site.dto.requests.auth.UserCreationRequest;
@@ -68,13 +67,14 @@ public class UserAuthController {
 
     }
 
-    @PostMapping("/oauth/registration")
-    public ResponseEntity<?> OauthUserRegistration(@RequestBody OauthUserCreationRequest authData) {
+    @GetMapping("/oauth_google_callback")
+    public ResponseEntity<?> GoogleCallback(@RequestParam("code") String code) {
         try {
-            var response = userAuthService.OauthLoginService(authData);
+            var response = userAuthService.handleGoogleCallback(code);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception err) {
             return ResponseEntity.status(400).body(new ErrorMessage(err.getMessage()));
         }
     }
+
 }

@@ -3,6 +3,7 @@ package com.amalitech.social_networking_site.configs;
 import com.amalitech.social_networking_site.entities.userDetials.UserDetailsImpl;
 import com.amalitech.social_networking_site.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 @RequiredArgsConstructor
 public class AppConfig {
+
 
     private final UserRepository userRepository;
 
@@ -43,7 +45,7 @@ public class AppConfig {
     @Bean
     public UserDetailsService userDetailsService() {
 
-        return username -> userRepository.findByEmail(username).map(user -> UserDetailsImpl.builder().email(user.getEmail()).password(user.getPassword()).role(user.getRole()).build()).orElseThrow();
+        return username -> userRepository.findByEmail(username).map(user -> UserDetailsImpl.builder().email(user.getEmail()).password(user.getPassword()).role(user.getRole()).build()).orElseThrow(()-> new IllegalArgumentException("User does not exit"));
 
     }
 

@@ -1,7 +1,12 @@
 package com.amalitech.social_networking_site.repositories;
 
 import com.amalitech.social_networking_site.entities.Contact;
-import org.springframework.data.repository.CrudRepository;
+import com.amalitech.social_networking_site.entities.User;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ContactRepository extends CrudRepository<Contact, Integer> {
+import java.util.List;
+
+public interface ContactRepository extends JpaRepository<Contact, Integer> {
+
+    List<Contact> findByOwner(User owner);
 }

@@ -1,7 +1,8 @@
 package com.amalitech.social_networking_site.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,16 +13,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Entity
-public class Invite {
+public class ChatMessage {
 
     @Id
     @GeneratedValue
-    private Integer id;
+    private String id;
 
-    private String receiver;
+    private String chatId;
 
-    @ManyToOne
-    @JsonBackReference
-    @JoinColumn(name = "user_id")
-    private User sender;
+    private String content;
+
 }

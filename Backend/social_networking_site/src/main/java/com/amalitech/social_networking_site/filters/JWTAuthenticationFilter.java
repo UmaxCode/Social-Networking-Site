@@ -37,29 +37,34 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         }
         jwtToken = authHeader.substring(7);
 
-        String userEmail = jwtAuthenticationService.extractUserEmail(jwtToken);
+       try {
+           String userEmail = jwtAuthenticationService.extractUserEmail(jwtToken);
 
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+           if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
-            if (jwtAuthenticationService.isValidToken(jwtToken, TokenSubject.LOGIN)) {
+               UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+               if (jwtAuthenticationService.isValidToken(jwtToken, TokenSubject.LOGIN)) {
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
+                   UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                           userDetails,
+                           null,
+                           userDetails.getAuthorities()
+                   );
 
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
+                   authToken.setDetails(
+                           new WebAuthenticationDetailsSource().buildDetails(request)
+                   );
 
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                   SecurityContextHolder.getContext().setAuthentication(authToken);
 
-            }
-        }
+               }
+           }
 
 
-        filterChain.doFilter(request, response);
+           filterChain.doFilter(request, response);
+       }catch (Exception err){
+
+           throw new IllegalArgumentException(err.getMessage());
+       }
     }
 }
