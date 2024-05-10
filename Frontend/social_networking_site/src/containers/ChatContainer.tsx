@@ -142,18 +142,27 @@ const ChatContainer = () => {
                 />
               </div>
               <div className="p-2 flex-1  bg-white overflow-y-scroll shadow-sm rounded">
-                <div className="bg-white  ">
-                  {chatRooms.map((chat, index) => {
-                    return (
-                      <Chat
-                        key={index}
-                        chatid={chat.chatId}
-                        full_name={chat.receiverEmail}
-                        image=""
-                        online={chat.online}
-                      />
-                    );
-                  })}
+                <div className="bg-white flex flex-col gap-2">
+                  {chatRooms.length === 0 ? (
+                    <>
+                      <span className="text-center">
+                        You have no friend(s). Send an Invite{" "}
+                        <i className="bi bi-send-plus-fill text-xl text-telegram-default"></i>
+                      </span>
+                    </>
+                  ) : (
+                    chatRooms.map((chat, index) => {
+                      return (
+                        <Chat
+                          key={index}
+                          chatid={chat.chatId}
+                          full_name={chat.receiverEmail}
+                          image=""
+                          online={chat.online}
+                        />
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
@@ -163,7 +172,9 @@ const ChatContainer = () => {
               className={`hidden absolute inset-0 sm:flex justify-center items-center rounded ${
                 chat.length != 0 ? "bg-transparent" : "bg-white"
               }`}
-            ></div>
+            >
+              Select a chat to start messaging
+            </div>
             <Outlet context={[chat, stompClient]} />
           </div>
         </div>
@@ -205,10 +216,10 @@ const ChatContainer = () => {
                       leaveFrom="opacity-100"
                       leaveTo="opacity-0"
                     >
-                      <div className="absolute left-[100%] top-0 -ml-8 flex pr-2 pt-4 sm:-ml-10 sm:pr-4">
+                      <div className="absolute left-[98%] top-0 -ml-8 flex pr-2 pt-4 sm:-ml-10 sm:pr-4">
                         <button
                           type="button"
-                          className="relative rounded-md text-black-300 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                          className="relative rounded-md text-black-300 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-600 "
                           onClick={() => setOpen(false)}
                         >
                           <span className="absolute -inset-2.5" />
@@ -220,12 +231,26 @@ const ChatContainer = () => {
                     <div className="flex h-full flex-col overflow-y-scroll bg-white py-6 shadow-xl">
                       <div className="px-4 sm:px-6">
                         <Dialog.Title className="text-base font-semibold leading-6 text-gray-900">
-                          Panel title
+                          Umaxconnect
                         </Dialog.Title>
                       </div>
                       <div className="relative mt-6 flex-1 px-4 sm:px-6">
-                        <Link to="../settings">User Settings</Link>
+                        <Link
+                          className="block hover:bg-blue-100 p-2 rounded"
+                          to="../settings"
+                        >
+                          User Settings
+                        </Link>
+
+                        <Link
+                          className="block hover:bg-blue-100 p-2 rounded mt-2"
+                          to="../invites"
+                        >
+                          Invitations
+                        </Link>
+
                         <button
+                          className="w-[100%] mt-2 hover:bg-red-100 p-2 text-left rounded"
                           onClick={() => {
                             logout();
                             navigate("/");

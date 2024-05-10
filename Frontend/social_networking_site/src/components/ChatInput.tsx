@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import { ChangeEvent, useRef, useState } from "react";
 
 type ChatInputProp = {
   icon: string;
@@ -9,7 +9,7 @@ type ChatInputProp = {
 const ChatInput = ({ icon, name, action }: ChatInputProp) => {
   const [data, setData] = useState<string>("");
 
-  const inputElement = useRef(null);
+  const inputElement = useRef<HTMLInputElement>(null);
 
   const onChangeSearchInput = (event: ChangeEvent<HTMLInputElement>) => {
     setData(event.target.value);
@@ -30,7 +30,9 @@ const ChatInput = ({ icon, name, action }: ChatInputProp) => {
         <button
           onClick={() => {
             action(data);
-            inputElement.current.value = "";
+            if (inputElement.current) {
+              inputElement.current.value = "";
+            }
           }}
           className={icon}
         ></button>

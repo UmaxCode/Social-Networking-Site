@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
 import { useFormBinding } from "../hooks/useFormBinding";
 import PasswordInput from "./PasswordInput";
-import SiginSignupButton from "./SiginSignupButton";
 import { useCallback, useState } from "react";
 import Modal from "./Modal";
 import toast from "react-hot-toast";
+import ActionButton from "./ActionButton";
 
 const userData = {
   fullname: "",
@@ -140,7 +140,7 @@ const Signup = () => {
             <div className="text-red-400 px-2">{formErrors.conpassword}</div>
           </div>
 
-          <SiginSignupButton text="Create Account" reqSent={processReq} />
+          <ActionButton text="Create Account" reqSent={processReq} />
           <p className="flex gap-2 justify-center my-3">
             Already have an account?
             <Link to="/" className="text-blue-500 t block">

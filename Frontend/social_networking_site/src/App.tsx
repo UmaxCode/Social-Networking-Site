@@ -12,6 +12,7 @@ import ForgotPassword from "./components/ForgotPassword";
 import MessageSection from "./components/MessageSection";
 import UserSettings from "./components/UserSettings";
 import OauthRedirect from "./components/OauthRedirect";
+import Invitation from "./components/Invitation";
 
 function App() {
   const router = createBrowserRouter(
@@ -22,6 +23,7 @@ function App() {
             <Route path=":chatId" element={<MessageSection />} />
           </Route>
           <Route path="settings" element={<UserSettings />} />
+          <Route path="invites" element={<Invitation />} />
         </Route>
 
         <Route path="/login/oauth2/code/google" element={<OauthRedirect />} />

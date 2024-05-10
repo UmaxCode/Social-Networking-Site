@@ -48,26 +48,27 @@ export const useFormBinding = (initialFormInput: any): any => {
       }
     }
 
-    if (data.password?.length === 0 || data.oldpassword?.length === 0) {
-      formValidation.password = "password is required.";
-      formValidation.oldpassword = "old password is required";
-    } else if (
-      data.password || data.oldpassword
-        ? data.password.length < 8 || data.oldpassword < 8
-        : null
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$/;
+
+    if (
+      !passwordRegex.test(data.password) &&
+      !passwordRegex.test(data.oldpassword)
     ) {
-      formValidation.password = "password must be more 7 characters.";
+      formValidation.password =
+        "password must be at least 8 characters with a combination of Upper, lower, special characters and numbers";
       formValidation.oldpassword =
-        "old password must be more than 7 characters";
-    } else {
-      if (data.conpassword?.length === 0) {
-        formValidation.conpassword = "password confirmation required.";
-      } else if (
-        data.conpassword?.length &&
-        data.conpassword !== data.password
-      ) {
-        formValidation.conpassword = "passwords do not match.";
-      }
+        "password must be at least 8 characters with a combination of Upper, lower, special characters and numbers";
+    } else if (!passwordRegex.test(data.password)) {
+      formValidation.password =
+        "password must be at least 8 characters with a combination of Upper, lower, special characters and numbers";
+    } else if (!passwordRegex.test(data.oldpassword)) {
+      formValidation.oldpassword =
+        "password must be at least 8 characters with a combination of Upper, lower, special characters and numbers";
+    } else if (data.oldpassword === data.password) {
+      formValidation.password = "use a different password";
+    } else if (data.conpassword !== data.password) {
+      formValidation.conpassword = "password do not match";
     }
 
     console.log(formValidation);

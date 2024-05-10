@@ -2,7 +2,7 @@ type CrudPropType = {
   method: string;
   data?: Object;
   url: string;
-  token: string;
+  token: string | null;
 };
 const useCrudOperation = async (info: CrudPropType) => {
   let response;

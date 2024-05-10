@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { useFormBinding } from "../hooks/useFormBinding";
-import SiginSignupButton from "./SiginSignupButton";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import ActionButton from "./ActionButton";
 
 const userData = {
   email: "",
@@ -77,7 +77,7 @@ const ForgotPassword = () => {
           <div className="text-red-400 px-2">{formErrors.email}</div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 items-center">
-          <SiginSignupButton text="Reset" reqSent={processReq} />
+          <ActionButton text="Reset" reqSent={processReq} />
           <span className="text-center flex flex-col items-center p-3">
             <span className="w-[2px] h-[8px] bg-gray-400"></span>
             <span className="text-gray-400">OR</span>

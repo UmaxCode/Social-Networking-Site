@@ -3,11 +3,11 @@ import { Dialog, Transition } from "@headlessui/react";
 import PasswordInput from "./PasswordInput";
 import { useFormBinding } from "../hooks/useFormBinding";
 import toast from "react-hot-toast";
-// import avataImage from "../assets/avatar.jpg";
+import avataImage from "../assets/avatar.jpg";
 import useCrudOperation from "../hooks/useCrudOperation";
-import SiginSignupButton from "./SiginSignupButton";
 import { AuthData } from "../contexts/AuthWrapper";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import ActionButton from "./ActionButton";
 
 const userData = {
   oldpassword: "",
@@ -16,11 +16,31 @@ const userData = {
 };
 
 type UserDetailsType = {
+  info: InfoType;
+  contacts: ContactType[];
+};
+
+type ContactType = {
+  fullname: string;
+  email: string;
+  state: string;
+};
+type InfoType = {
   pic: string;
   fullname: string;
   username: string;
   email: string;
   role: string;
+};
+
+type File = {
+  fileSeleted: boolean;
+  file: Blob;
+};
+
+type UpdateStatus = {
+  infoToggler: boolean;
+  contactToggler: boolean;
 };
 
 const formData = new FormData();
@@ -32,12 +52,17 @@ const UserSettings = () => {
 
   const [userDetails, setUserDetails] = useState<UserDetailsType>();
 
+  const [userDetailsUpdate, setUserDetailsUpdated] = useState<UpdateStatus>({
+    infoToggler: false,
+    contactToggler: false,
+  });
+
   const [formInput, setFormInput, validator, onFormChangeInput, formErrors] =
     useFormBinding(userData);
 
-  const [fileSeletion, setFilSelection] = useState({
+  const [fileSeletion, setFilSelection] = useState<File>({
     fileSeleted: false,
-    file: null,
+    file: new Blob(),
   });
 
   const [image, setImage] = useState("");
@@ -56,21 +81,34 @@ const UserSettings = () => {
       url: "http://localhost:3001/user/details",
       token: authenticate.token,
     })
-      .then((data) => setUserDetails(data))
+      .then((data) => setUserDetails({ ...data }))
       .catch((error) => toast.error(error.message));
-  }, []);
+  }, [userDetailsUpdate.infoToggler, userDetailsUpdate.contactToggler]);
 
   const updateFile = () => {
+    formData.append(
+      "file",
+      fileSeletion.file,
+      `${userDetails?.info.username}.png`
+    );
     fetch("http://localhost:3001/user/profile_pic_update", {
       method: "PUT",
       headers: {
-        Authorisation: `Bearer ${authenticate.token}`,
-        "Content-Type": "multpart/form-data",
+        Authorization: `Bearer ${authenticate.token}`,
       },
-      body: JSON.stringify(formData),
+      body: formData,
     })
-      .then((res) => console.log(res))
-      .catch((error) => console.log("DFDFDFDFDFDFDFDF"));
+      .then((res) => res.json())
+      .then((data) => {
+        toast.success(data.message);
+      })
+      .catch((error) => console.log(error))
+      .finally(() =>
+        setUserDetailsUpdated({
+          ...userDetailsUpdate,
+          ["infoToggler"]: !userDetailsUpdate.infoToggler,
+        })
+      );
   };
 
   const changePassword = (event: FormEvent) => {
@@ -120,12 +158,57 @@ const UserSettings = () => {
     setFilSelection({
       ...fileSeletion,
       ["fileSeleted"]: false,
-      ["file"]: null,
+      ["file"]: new Blob(),
     });
   };
+
+  const setContactState = (email: string, state: string) => {
+    console.log(state);
+
+    async function setState() {
+      try {
+        const response = await fetch(
+          "http://localhost:3001/user/blacklist-whitelist",
+          {
+            method: "Put",
+            headers: {
+              Authorization: `Bearer ${authenticate.token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ contact: email, status: state }),
+          }
+        );
+
+        console.log(response);
+
+        if (!response.ok) {
+          const errorMessage = await response.json();
+          throw new Error(errorMessage.error);
+        }
+
+        const data = await response.json();
+        toast.success(data.message);
+      } catch (error) {
+        const err = error as Error;
+        toast.error(err.message);
+      } finally {
+        setUserDetailsUpdated({
+          ...userDetailsUpdate,
+          ["contactToggler"]: !userDetailsUpdate.contactToggler,
+        });
+      }
+    }
+
+    setState();
+  };
+  console.log(userDetails?.info.pic);
   return (
     <>
       <div className="max-w-[900px] mx-auto p-3">
+        <Link to="../chats" className="font-medium">
+          <i className="bi bi-arrow-left me-3"></i>
+          Back to chats
+        </Link>
         <div className="py-3 text-xl text-telegram-default uppercase">
           User Settings
         </div>
@@ -134,10 +217,15 @@ const UserSettings = () => {
         </p>
         <div className="">
           <p>Profile Photo</p>
-          <div className="py-4 border h-[120px] w-[120px] rounded mt-2 mb-3">
+          <div className=" border h-[120px] w-[120px] rounded-md mt-2 mb-3">
             <img
-              alt=""
-              className=" h-[100%] w-[100%] rounded-full  object-fill"
+              src={`${
+                userDetails?.info.pic !== null
+                  ? userDetails?.info.pic
+                  : avataImage
+              }`}
+              alt={`${userDetails?.info.fullname.split(" ")[0]}'s profile`}
+              className=" h-[100%] w-[100%] rounded-md  object-fill"
             />
           </div>
           <input
@@ -155,7 +243,6 @@ const UserSettings = () => {
             Change profile
           </button>
         </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
           <div className="mb-4">
             <label htmlFor="fullname" className="block text-gray-700 mb-2">
@@ -164,7 +251,7 @@ const UserSettings = () => {
             <input
               disabled
               type="text"
-              defaultValue={userDetails?.fullname}
+              defaultValue={userDetails?.info.fullname}
               className="w-full border rounded-md py-2 px-3 text-gray-700 focus:outline-none focus:border-telegram-default"
             />
           </div>
@@ -176,7 +263,7 @@ const UserSettings = () => {
             <input
               disabled
               type="text"
-              defaultValue={userDetails?.username}
+              defaultValue={userDetails?.info.username}
               className="w-full border rounded-md py-2 px-3 text-gray-700 focus:outline-none focus:border-telegram-default"
             />
           </div>
@@ -188,7 +275,7 @@ const UserSettings = () => {
             <input
               disabled
               type="text"
-              defaultValue={userDetails?.email}
+              defaultValue={userDetails?.info.email}
               className="w-full border rounded-md py-2 px-3 text-gray-700 focus:outline-none focus:border-telegram-default"
             />
           </div>
@@ -199,12 +286,11 @@ const UserSettings = () => {
             <input
               disabled
               type="text"
-              defaultValue={userDetails?.role}
+              defaultValue={userDetails?.info.role}
               className="w-full border rounded-md py-2 px-3 text-gray-700 focus:outline-none focus:border-telegram-default"
             />
           </div>
         </div>
-
         <p className="py-2 text-gray-500 text-[1.3em] capitalize border-b-2 mb-2">
           Security
         </p>
@@ -255,9 +341,49 @@ const UserSettings = () => {
               />
               <div className="text-red-400 px-2">{formErrors.conpassword}</div>
             </div>
-            <SiginSignupButton text="Change Password" reqSent={processReq} />
+            <ActionButton text="Change Password" reqSent={processReq} />
           </div>
         </form>
+        <p className="py-2 text-gray-500 text-[1.3em] capitalize border-b-2 mb-2 mt-4">
+          User Contacts
+        </p>
+        <div className="pt-3 flex flex-col gap-2">
+          {userDetails?.contacts.map((contact, index) => {
+            return (
+              <div key={index} className="grid grid-cols-4 gap-3">
+                <div className="border col-span-3 rounded px-3 py-2 hover:shadow-sm cursor-pointer">
+                  <span className=" border-r-2 pr-2 ">{contact.fullname}</span>
+                  <span className="border-r-2 pr-2 pl-2">{contact.email}</span>
+                  <span
+                    className={`ml-2 text-white rounded px-2 ${
+                      contact.state === "WHITELIST"
+                        ? "bg-green-300"
+                        : "bg-red-300"
+                    }`}
+                  >
+                    {contact.state === "WHITELIST" ? "Active" : "Inactive"}
+                  </span>
+                </div>
+                <div className="col-span-1 flex items-center">
+                  <button
+                    onClick={() =>
+                      setContactState(contact.email, contact.state)
+                    }
+                    className={`w-[100%] rounded h-[100%] text-white ${
+                      contact.state === "WHITELIST"
+                        ? "bg-red-300 hover:bg-red-400"
+                        : "bg-green-300 hover:bg-green-400"
+                    }`}
+                  >
+                    {contact.state === "WHITELIST"
+                      ? "Blacklist user"
+                      : "Make user active"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
       <Transition appear show={fileSeletion.fileSeleted} as={Fragment}>
         <Dialog as="div" className="relative z-20" onClose={() => {}}>
@@ -309,7 +435,10 @@ const UserSettings = () => {
                     <button
                       type="submit"
                       className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                      onClick={() => updateFile()}
+                      onClick={() => {
+                        updateFile();
+                        closeModal();
+                      }}
                     >
                       Save
                     </button>

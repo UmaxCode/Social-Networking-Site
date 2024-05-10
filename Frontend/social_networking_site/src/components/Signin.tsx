@@ -1,12 +1,12 @@
 import { useFormBinding } from "../hooks/useFormBinding";
 import AlternateAuthentication from "./AlternateAuthentication";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import PasswordInput from "./PasswordInput";
-import SiginSignupButton from "./SiginSignupButton";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import { AuthData } from "../contexts/AuthWrapper";
+import ActionButton from "./ActionButton";
 
 const userData = {
   email: "",
@@ -16,6 +16,9 @@ const userData = {
 const Signin = () => {
   const [formInput, setFormInput, validator, onFormChangeInput, formErrors] =
     useFormBinding(userData);
+
+  const params = useParams();
+  console.log(params);
 
   const { login } = AuthData();
 
@@ -101,7 +104,7 @@ const Signin = () => {
           >
             Forgot password?
           </Link>
-          <SiginSignupButton text="Login" reqSent={processReq} />
+          <ActionButton text="Login" reqSent={processReq} />
         </form>
         <p className="flex gap-2 justify-center my-3">
           Don't have an account?

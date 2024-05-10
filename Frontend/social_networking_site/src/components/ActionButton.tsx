@@ -3,7 +3,7 @@ type ButtonProp = {
   text: string;
 };
 
-const SiginSignupButton = ({ reqSent, text }: ButtonProp) => {
+const ActionButton = ({ reqSent, text }: ButtonProp) => {
   return (
     <button
       type="submit"
@@ -17,4 +17,4 @@ const SiginSignupButton = ({ reqSent, text }: ButtonProp) => {
   );
 };
 
-export default SiginSignupButton;
+export default ActionButton;
