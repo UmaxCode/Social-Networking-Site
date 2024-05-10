@@ -1,6 +1,8 @@
 package com.amalitech.social_networking_site.services;
 
+import com.amalitech.social_networking_site.dto.requests.user.ContactStatusDTO;
 import com.amalitech.social_networking_site.dto.requests.user.PasswordChangeRequest;
+import com.amalitech.social_networking_site.dto.response.InviteDTO;
 import com.amalitech.social_networking_site.entities.Contact;
 import com.amalitech.social_networking_site.entities.Invite;
 import com.amalitech.social_networking_site.entities.User;
@@ -32,8 +34,8 @@ public class UserService {
     final private ContactRepository contactRepository;
     final private ChatRoomService chatRoomService;
 
-    @Value("${upload.directory}")
-    private String upload_directory;
+    @Value("${upload.profile.directory}")
+    private String upload_profile_directory;
 
     public User getUserDetails(Authentication authentication) {
 
@@ -42,6 +44,11 @@ public class UserService {
         Optional<User> user = userRepository.findByEmail(principal.getUsername());
         return user.orElseThrow(() -> new IllegalArgumentException("DFDF"));
 
+    }
+
+    public List<User> getAllPlatformUsers() {
+
+        return userRepository.findAll();
     }
 
     public User getUserFromEmail(String email) {
@@ -56,30 +63,30 @@ public class UserService {
 
     public String changeUserProfilePic(MultipartFile file) {
 
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email).orElseThrow();
 
-        String proPicPath = String.format("%s\\%s", upload_directory, user.getUsername() + ".png");
 
-        File pic = new File(proPicPath);
-        if (user.getProfile().getFilePath() != null) {
+        String server_pic_url = "http://localhost:3001/profilePics/" + user.getUsername() + ".png";
 
-            user.getProfile().setFilePath(null);
 
-            userRepository.save(user);
+        String proPicPath = String.format("%s/%s", upload_profile_directory, user.getUsername() + ".png");
 
-            pic.delete();
+        if (user.getProfile().getFilePath() != null) {   // removing existing profile pic
+
+            File existingPic = new File(proPicPath);
+
+            existingPic.delete();
+
         }
 
-        user.getProfile().setFilePath(pic.getPath());
+        user.getProfile().setFilePath(server_pic_url);
         userRepository.save(user);
-
         try {
-            file.transferTo(pic);
+            file.transferTo(new File(proPicPath));
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
@@ -96,6 +103,10 @@ public class UserService {
 
         User user = userRepository.findByEmail(email).orElseThrow();
 
+        if (user.getPassword() == null) {
+            throw new IllegalArgumentException("Please go to forget password page to request for a password");
+        }
+
         if (passwordEncoder.matches(userData.oldPassword(), user.getPassword())) {
             user.setPassword(passwordEncoder.encode(userData.newPassword()));
             userRepository.save(user);
@@ -110,6 +121,30 @@ public class UserService {
     public void sendUserInvite(User sender, User receiver) {
 
 
+        Optional<Invite> senderToReceiver = inviteRepository.findBySenderAndReceiver(sender, receiver.getEmail());
+
+        if(senderToReceiver.isPresent()){
+            throw new IllegalArgumentException(String.format("You have already sent and invite to %s", receiver.getEmail()));
+        }
+
+        Optional<Invite> receiverToSender = inviteRepository.findBySenderAndReceiver(receiver, sender.getEmail());
+
+        if(receiverToSender.isPresent()){
+            throw new IllegalArgumentException(String.format("%s has already sent you an invite.", receiver.getEmail()));
+
+        }
+
+        Optional<Contact> optionalContact = contactRepository.findByOwnerAndEmail(sender, receiver.getEmail());
+
+        if(optionalContact.isPresent()){
+
+            throw new IllegalArgumentException(String.format("You and %s are friends. Refresh to see current update", receiver.getEmail()));
+        }
+
+
+
+
+
         Invite userInvite = Invite.builder()
                 .receiver(receiver.getEmail())
                 .sender(sender)
@@ -118,24 +153,34 @@ public class UserService {
         inviteRepository.save(userInvite);
     }
 
-    public void acceptUserInvite(Integer id, String senderEmail) {
+    public String acceptUserInvite(String senderEmail , String receiverEmail) {
 
-        Optional<Invite> optionalInvite = inviteRepository.findById(id);
+        Optional<User> optionalUser = userRepository.findByEmail(senderEmail);
+
+        if(optionalUser.isEmpty()){
+
+            throw new IllegalArgumentException("Invite sender not found.");
+        }
+
+        User sender = optionalUser.get();
+        Optional<Invite> optionalInvite = inviteRepository.findBySenderAndReceiver(sender, receiverEmail);
 
         if (optionalInvite.isEmpty()) {
-            return;
+            throw new IllegalArgumentException(String.format("%s is not in your invite list. Refresh to see current update", senderEmail));
         }
 
         var invite = optionalInvite.get();
 
         Contact senderContact = Contact.builder()
-                .contact(invite.getReceiver())
+                .fullname(getUserFromEmail(invite.getReceiver()).getFullName())
+                .email(invite.getReceiver())
                 .contactState(Utilities.ContactState.WHITELIST)
                 .owner(invite.getSender())
                 .build();
 
         Contact receiverContact = Contact.builder()
-                .contact(invite.getSender().getEmail())
+                .fullname(getUserFromEmail(invite.getSender().getEmail()).getFullName())
+                .email(invite.getSender().getEmail())
                 .contactState(Utilities.ContactState.WHITELIST)
                 .owner(getUserFromEmail(
                         invite.getReceiver()
@@ -152,13 +197,70 @@ public class UserService {
 
         inviteRepository.delete(invite);
 
+        return "Invite accepted successfully";
+
+    }
+
+    public String declineInvite(String senderEmail , String receiverEmail){
+
+        Optional<User> optionalUser = userRepository.findByEmail(senderEmail);
+
+        if(optionalUser.isEmpty()){
+
+            throw new IllegalArgumentException("Invite sender not found.");
+        }
+
+        User sender = optionalUser.get();
+
+        Optional<Invite> optionalInvite = inviteRepository.findBySenderAndReceiver(sender, receiverEmail);
+
+        if(optionalInvite.isEmpty()){
+            throw new IllegalArgumentException("Invite does not exist");
+        }
+
+        inviteRepository.delete(optionalInvite.get());
+
+        return String.format("You declined an invite from %s", senderEmail);
+
     }
 
 
-    public List<Invite> loadingPendingInvite(String receiver) {
+    public String setUserContactStatus(ContactStatusDTO contactStatusDTO, User owner){
 
-        return inviteRepository.findByReceiver(receiver);
 
+        Optional<Contact> optionalContact = contactRepository.findByOwnerAndEmail(owner, contactStatusDTO.contact());
+
+        if(optionalContact.isEmpty()){
+            throw new IllegalArgumentException("Contact does not exist");
+        }
+
+        Contact contact = optionalContact.get();
+
+        if(contactStatusDTO.status().equals("BLACKLIST")){
+            contact.setContactState(Utilities.ContactState.WHITELIST);
+        }else {
+            contact.setContactState(Utilities.ContactState.BLACKLIST);
+
+        }
+
+        contactRepository.save(contact);
+
+        return String.format("%s is added to %s", contact.getFullname(), contact.getContactState().name());
+
+    }
+
+
+    public List<InviteDTO> loadingPendingInvite(String receiver) {
+
+        return inviteRepository.findByReceiver(receiver).stream().map((invite -> new InviteDTO(findInviteSenderEmail(invite.getSender()), invite.getId()))).toList();
+
+    }
+
+    private String findInviteSenderEmail(User inviteSender){
+
+        var optionalUser = userRepository.findById(inviteSender.getId());
+
+        return optionalUser.map(User::getEmail).orElse(null);
     }
 
 }

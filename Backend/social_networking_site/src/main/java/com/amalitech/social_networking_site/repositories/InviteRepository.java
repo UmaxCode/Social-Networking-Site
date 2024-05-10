@@ -11,4 +11,6 @@ public interface InviteRepository extends JpaRepository<Invite, Integer> {
 
     List<Invite> findByReceiver(String receiver);
 
+    Optional<Invite> findBySenderAndReceiver(User sender, String receiver);
+
 }

@@ -5,6 +5,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
 import java.net.URL;
+import java.util.List;
 
-public record UserDetailsData(String fullname, String username, String email, String role, String path) {
+public record UserDetailsData(UserInfo info, List<ContactDTO> contacts) {
 }

@@ -10,9 +10,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Integer> {
 
     Optional<ChatRoom> findBySenderEmailAndReceiverEmail(String senderEmail, String receiverEmail);
 
-    Optional<ChatRoom> findBySenderEmail(String senderEmail);
+    List<ChatRoom> findBySenderEmail(String senderEmail);
 
-    ChatRoom findByReceiverEmail(String senderEmail);
+    List<ChatRoom> findByReceiverEmail(String senderEmail);
 
 
 }

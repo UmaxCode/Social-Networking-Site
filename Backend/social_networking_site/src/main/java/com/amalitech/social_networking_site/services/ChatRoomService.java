@@ -51,26 +51,30 @@ public class ChatRoomService {
     }
 
 
-    public ChatRoom setChatRoomState(OnlineUser onlineUser, boolean value) {
+    public List<ChatRoom> setChatRoomState(OnlineUser onlineUser, boolean value) {
 
-        Optional<ChatRoom> optionalChatRoom = chatRoomRepository.findBySenderEmail(onlineUser.email());
+        List<ChatRoom> chatRooms = chatRoomRepository.findBySenderEmail(onlineUser.email());
 
-        if(optionalChatRoom.isEmpty()){
-            return null;
-        }
 
-        var chatRoom = optionalChatRoom.get();
 
-        chatRoom.setOnline(value);
+        chatRooms.forEach((chatRoom)-> chatRoom.setOnline(value));
 
-       return chatRoomRepository.save(chatRoom);
+
+
+
+       return chatRoomRepository.saveAll(chatRooms);
 
     }
 
-    public ChatRoom findChatRoomByReceiver(String receiverEmail){
+    public List<ChatRoom> findChatRoomByReceiver(String receiverEmail){
 
         return chatRoomRepository.findByReceiverEmail(receiverEmail);
 
+    }
+
+    public ChatRoom findBySenderEmailAndReceiverEmail(String senderEmail, String receiverEmail){
+
+        return chatRoomRepository.findBySenderEmailAndReceiverEmail(senderEmail, receiverEmail).orElse(null);
     }
 
 }

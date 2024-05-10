@@ -4,7 +4,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = {"com.amalitech"})
+@SpringBootApplication()
 public class SocialNetworkingSiteApplication {
 
 	public static void main(String[] args) {

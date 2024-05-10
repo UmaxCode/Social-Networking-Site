@@ -6,9 +6,11 @@ import com.amalitech.social_networking_site.dto.response.ErrorMessage;
 import com.amalitech.social_networking_site.entities.ChatMessage;
 import com.amalitech.social_networking_site.entities.ChatRoom;
 import com.amalitech.social_networking_site.entities.Contact;
+import com.amalitech.social_networking_site.entities.User;
 import com.amalitech.social_networking_site.services.ChatMessagingService;
 import com.amalitech.social_networking_site.services.ChatRoomService;
 import com.amalitech.social_networking_site.services.UserService;
+import com.amalitech.social_networking_site.utilities.Utilities;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -40,7 +42,7 @@ public class ChatController {
 
     @MessageMapping("/user.online")
     @SendTo("/user/public")
-    public ChatRoom userOnline(
+    public List<ChatRoom> userOnline(
             @Payload OnlineUser user) {
 
         return chatRoomService.setChatRoomState(user, true);
@@ -49,7 +51,7 @@ public class ChatController {
 
     @MessageMapping("/user.offline")
     @SendTo("/user/public")
-    public ChatRoom userOffline(@Payload OnlineUser user) {
+    public List<ChatRoom> userOffline(@Payload OnlineUser user) {
 
         return chatRoomService.setChatRoomState(user, false);
 
@@ -69,11 +71,14 @@ public class ChatController {
     public ResponseEntity<?> getUserChatRooms(Authentication authentication) {
 
         try {
-            List<Contact> userContacts = userService.getUserDetails(authentication).getContacts();
+            User sender = userService.getUserDetails(authentication);
 
-            var users = userContacts.stream().map((contact -> chatRoomService.findChatRoomByReceiver(contact.getContact()))).toList();
+            List<Contact> userContacts = sender.getContacts().stream().filter((contact -> contact.getContactState().equals(Utilities.ContactState.WHITELIST))).toList();
 
-            return ResponseEntity.ok(users);
+            List<ChatRoom> chatRooms = userContacts.stream().map((contact -> chatRoomService.findBySenderEmailAndReceiverEmail(sender.getEmail(), contact.getEmail()))).toList();
+
+            return ResponseEntity.ok(chatRooms);
+
         } catch (Exception e) {
             return ResponseEntity.status(400).body(new ErrorMessage(e.getMessage()));
         }

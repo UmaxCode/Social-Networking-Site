@@ -21,7 +21,9 @@ public class Contact {
     @GeneratedValue
     private Integer id;
 
-    private String contact;
+    private String email;
+
+    private String fullname;
 
     @Enumerated(EnumType.STRING)
     private ContactState contactState;
