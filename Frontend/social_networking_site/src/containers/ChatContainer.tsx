@@ -1,83 +1,50 @@
 import Chat from "../components/Chat";
 import ChatInput from "../components/ChatInput";
 import { Link, Outlet, useParams, useNavigate } from "react-router-dom";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState, useRef } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { AuthData } from "../contexts/AuthWrapper";
-import { Client, Message, over } from "stompjs";
-import SockJS from "sockjs-client/dist/sockjs";
-import { jwtDecode } from "jwt-decode";
+import { Client, over } from "stompjs";
+
+export type ChatRoom = {
+  chatId: string;
+  online: boolean;
+  senderEmail: string;
+  receiverEmail: string;
+};
 
 const ChatContainer = () => {
+  const navigate = useNavigate();
+
+  const connection = useRef<Client>();
+
   const [open, setOpen] = useState(false);
 
-  const [chatRooms, setChatRooms] = useState([]);
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+
+  const [selectedChat, setSelectedChat] = useState<ChatRoom>();
 
   const { logout, authenticate } = AuthData();
-
-  const [stompClient, setStompClient] = useState<Client>();
-
-  const connect = () => {
-    const sock = new SockJS("http://localhost:3001/ws");
-
-    const temp = over(sock);
-    const headers = {
-      Authorization: `Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiUkVHX1VTRVIiLCJlbWFpbCI6Im1heHdlbGwub2Rvb21AYW1hbGl0ZWNoLmNvbSIsInN1YiI6IkxPR0lOIiwiaWF0IjoxNzE1MTc1NDc5LCJleHAiOjE3MTUyNjE4Nzl9.Hmn5KhU21nYFuzyhDTXGzzvz6jglOa7-tiGiv7SPvZM`,
-      // "X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
-    };
-
-    temp.connect(headers, onConnect, onError);
-  };
-
-  // function getCookie(name) {
-  //   const value = `; ${document.cookie}`;
-  //   const parts = value.split(`; ${name}=`);
-  //   if (parts.length === 2) {
-  //     return parts.pop()?.split(";").shift();
-  //   }
-  // }
-
-  function onConnect() {
-    console.log("Websocket connected!");
-    const senderEmail = "";
-    stompClient?.subscribe(
-      `/user/${senderEmail}/queue/messages`,
-      onMessageReceived
-    );
-    stompClient?.subscribe("/user/public", onMessageReceived);
-    stompClient?.send(
-      "/app/user.online",
-      {},
-      JSON.stringify({ email: senderEmail })
-    );
-  }
-
-  function onError() {
-    console.log("ERROR connecting to websock");
-  }
-
-  // useEffect(() => {
-  //   if (messages && stompClient) {
-  //     setMessages([...messages]);
-
-  //     stompClient.send("/app/chat");
-  //   }
-  // }, [messages]);
-
-  function onMessageReceived(payload: Message) {
-    // reload
-
-    const message = JSON.parse(payload.body);
-    console.log(`message received ${message}`);
-  }
 
   useEffect(() => {
     if (!authenticate.isAuthenticated) {
       navigate("/");
     }
 
-    connect();
+    const socket = new WebSocket("ws://localhost:3001/ws");
+
+    const stompClient = over(socket);
+
+    socket.addEventListener("open", (event) => {
+      socket.send("Connection established");
+    });
+
+    socket.addEventListener("message", (event) => {
+      console.log("Message from server", event.data);
+    });
+
+    connection.current = stompClient;
 
     async function loadUserChatInfor() {
       try {
@@ -105,6 +72,11 @@ const ChatContainer = () => {
     }
 
     loadUserChatInfor();
+
+    return () =>
+      connection.current?.disconnect(() => {
+        console.log("Disconnected from WebSocket server");
+      });
   }, []);
 
   const params = useParams();
@@ -112,8 +84,6 @@ const ChatContainer = () => {
   const chat = chatRooms.filter(
     (chatroom) => chatroom.chatId === params.chatId
   );
-
-  const navigate = useNavigate();
 
   return (
     <>
@@ -159,6 +129,7 @@ const ChatContainer = () => {
                           full_name={chat.receiverEmail}
                           image=""
                           online={chat.online}
+                          setSelectedChat={() => setSelectedChat(chat)}
                         />
                       );
                     })
@@ -175,7 +146,7 @@ const ChatContainer = () => {
             >
               Select a chat to start messaging
             </div>
-            <Outlet context={[chat, stompClient]} />
+            <Outlet context={[selectedChat, connection.current]} />
           </div>
         </div>
       </div>

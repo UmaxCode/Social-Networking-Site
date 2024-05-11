@@ -2,63 +2,74 @@ import { Fragment, useState, useRef, useEffect } from "react";
 import ChatInput from "./ChatInput";
 import { Link, useOutletContext } from "react-router-dom";
 import { Dialog, Transition } from "@headlessui/react";
-
+import { ChatRoom } from "../containers/ChatContainer";
 import { AuthData } from "../contexts/AuthWrapper";
+import { Client } from "stompjs";
 
+type File = {
+  fileSeleted: boolean;
+  file: Blob;
+};
+
+type Message = {
+  chatId: string;
+  message: string;
+};
 const MessageSection = () => {
-  const [chat, stompClient] = useOutletContext();
+  const [chat, connection] = useOutletContext<[ChatRoom, Client]>();
+
+  const inputFile = useRef<HTMLInputElement>(null);
 
   const { authenticate } = AuthData();
 
-  const [chatMessages, setChatMessages] = useState([]);
+  const [chatMessages, setChatMessages] = useState<Message[]>();
+
+  const [fileSeletion, setFilSelection] = useState<File>({
+    fileSeleted: false,
+    file: new Blob(),
+  });
 
   useEffect(() => {
     async function loadUserMessages() {
-      const url = `http://localhost:3001/messages/${chat[0]?.senderEmail}/${chat[0]?.receiverEmail}`;
+      if (chat) {
+        const url = `http://localhost:3001/messages/${chat?.senderEmail}/${chat?.receiverEmail}`;
 
-      console.log(url);
-      try {
-        const response = await fetch(url, {
-          method: "Get",
-          headers: {
-            Authorization: `Bearer ${authenticate.token}`,
-          },
-        });
+        console.log(url);
+        try {
+          const response = await fetch(url, {
+            method: "Get",
+            headers: {
+              Authorization: `Bearer ${authenticate.token}`,
+            },
+          });
 
-        if (!response.ok) {
-          throw new Error();
+          if (!response.ok) {
+            throw new Error();
+          }
+
+          setChatMessages(chatMessages);
+        } catch (error) {
+          console.log(error);
         }
-
-        console.log(response);
-
-        // const chat = await response.json();
-        // setChatMessages([...chat]);
-      } catch (error) {
-        console.log(error);
       }
     }
-
     loadUserMessages();
-  }, [chat]);
-
-  // console.log(chat);
-
-  const inputFile = useRef(null);
-
-  const [fileSeletion, setFilSelection] = useState({
-    fileSeleted: false,
-    file: null,
-  });
+  }, []);
 
   function sendMessage(message: string) {
-    if (message.trim() && stompClient) {
+    if (message.trim() && connection) {
       const chatMessage = {
-        senderEmail,
-        receiverEmail,
-        message,
+        senderEmail: chat?.senderEmail,
+        receiverEmail: chat?.receiverEmail,
+        content: message,
       };
-      stompClient.send("/app/chat", {}, JSON.stringify(chatMessage));
+
+      connection.send("/app/chat", {}, JSON.stringify(chatMessage));
     }
+  }
+
+  function sendFile(file: Blob) {
+    return null;
   }
 
   const openModal = (event: any) => {
@@ -78,7 +89,7 @@ const MessageSection = () => {
     setFilSelection({
       ...fileSeletion,
       ["fileSeleted"]: false,
-      ["file"]: null,
+      ["file"]: new Blob(),
     });
   };
   return (
@@ -92,21 +103,33 @@ const MessageSection = () => {
             <img src="" alt="" className="h-[100%] w-[100%] rounded-full" />
             <div
               className={`absolute h-[6px] w-[6px] ${
-                chat.online ? "bg-green-400" : "bg-gray-300"
+                chat?.online ? "bg-green-400" : "bg-gray-300"
               } rounded-full bottom-0 right-0`}
             ></div>
           </div>
           <div className="">
-            <h3 className="sm:text-black text-white">{chat.receiver}</h3>
+            <h3 className="sm:text-black text-white">{chat?.receiverEmail}</h3>
             <span className="text-[0.9em] sm:text-gray-400 text-white">
-              {chat.status ? "online" : "offline"}
+              {chat?.online ? "online" : "offline"}
             </span>
           </div>
         </div>
         <div className="flex-1 sm:bg-white bg-gray-100 rounded shadow-sm p-2 overflow-y-auto">
           <div className="">
             {chatMessages?.map((message, index) => {
-              return <div key={index}>{message}</div>;
+              return (
+                <div key={index}>
+                  <span
+                    className={`${
+                      message.chatId.split("_")[0] === chat?.senderEmail
+                        ? "text-right"
+                        : "text-left"
+                    }`}
+                  >
+                    {message.message}
+                  </span>
+                </div>
+              );
             })}
           </div>
         </div>
