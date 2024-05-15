@@ -1,6 +1,11 @@
 import { Fragment, useState, useRef, useEffect } from "react";
 import ChatInput from "./ChatInput";
-import { Link, useOutletContext } from "react-router-dom";
+import {
+  Link,
+  useOutletContext,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { Dialog, Transition } from "@headlessui/react";
 import { ChatRoom } from "../containers/ChatContainer";
 import { AuthData } from "../contexts/AuthWrapper";
@@ -13,58 +18,84 @@ type File = {
 
 type Message = {
   chatId: string;
-  message: string;
+  senderEmail: string;
+  content: string;
 };
+
 const MessageSection = () => {
-  const [chat, connection] = useOutletContext<[ChatRoom, Client]>();
+  const [newMessage, chatRooms, connection, loggedInUser] =
+    useOutletContext<[string, ChatRoom[], Client, string]>();
+
+  const params = useParams();
+
+  const selectedChatRoom = chatRooms.filter(
+    (chatRoom) => chatRoom.chatId === params.chatId
+  )[0];
+
+  const [chatMessages, setChatMessages] = useState<Message[]>();
 
   const inputFile = useRef<HTMLInputElement>(null);
 
+  const chatBoxRef = useRef<HTMLDivElement>(null);
+
   const { authenticate } = AuthData();
 
-  const [chatMessages, setChatMessages] = useState<Message[]>();
+  const navigate = useNavigate();
+
+  const [messageToggle, setMessageToggle] = useState<boolean>();
 
   const [fileSeletion, setFilSelection] = useState<File>({
     fileSeleted: false,
     file: new Blob(),
   });
 
-  useEffect(() => {
-    async function loadUserMessages() {
-      if (chat) {
-        const url = `http://localhost:3001/messages/${chat?.senderEmail}/${chat?.receiverEmail}`;
+  async function loadUserMessages() {
+    if (selectedChatRoom) {
+      const url = `http://localhost:3001/messages/${selectedChatRoom.senderEmail}/${selectedChatRoom.receiverEmail}`;
 
-        console.log(url);
-        try {
-          const response = await fetch(url, {
-            method: "Get",
-            headers: {
-              Authorization: `Bearer ${authenticate.token}`,
-            },
-          });
+      try {
+        const response = await fetch(url, {
+          method: "Get",
+          headers: {
+            Authorization: `Bearer ${authenticate.token}`,
+          },
+        });
 
-          if (!response.ok) {
-            throw new Error();
-          }
-
-          setChatMessages(chatMessages);
-        } catch (error) {
-          console.log(error);
+        if (!response.ok) {
+          throw new Error();
         }
+
+        const data = await response.json();
+
+        setChatMessages([...data]);
+
+        console.log(data);
+      } catch (error) {
+        console.log(error);
       }
     }
-    loadUserMessages();
-  }, []);
+  }
 
-  function sendMessage(message: string) {
-    if (message.trim() && connection) {
+  useEffect(() => {
+    if (!authenticate.isAuthenticated) {
+      navigate("/");
+    }
+
+    loadUserMessages().then(() => scrollToBottom());
+  }, [selectedChatRoom, messageToggle, newMessage]);
+
+  function sendMessage(data: string) {
+    if (data?.trim() && connection) {
       const chatMessage = {
-        senderEmail: chat?.senderEmail,
-        receiverEmail: chat?.receiverEmail,
-        content: message,
+        chatId: selectedChatRoom.chatId,
+        senderEmail: selectedChatRoom.senderEmail,
+        receiverEmail: selectedChatRoom.receiverEmail,
+        content: data.trim(),
       };
 
       connection.send("/app/chat", {}, JSON.stringify(chatMessage));
+
+      setMessageToggle(!messageToggle);
     }
   }
 
@@ -92,6 +123,12 @@ const MessageSection = () => {
       ["file"]: new Blob(),
     });
   };
+
+  const scrollToBottom = () => {
+    if (chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
+  };
   return (
     <>
       <div className=" h-[100%] rounded flex flex-col gap-3 bg-white sm:bg-transparent p-2 sm:p-0 sm:relative fixed inset-0 z-10">
@@ -103,31 +140,44 @@ const MessageSection = () => {
             <img src="" alt="" className="h-[100%] w-[100%] rounded-full" />
             <div
               className={`absolute h-[6px] w-[6px] ${
-                chat?.online ? "bg-green-400" : "bg-gray-300"
+                selectedChatRoom?.online ? "bg-green-400" : "bg-gray-300"
               } rounded-full bottom-0 right-0`}
             ></div>
           </div>
           <div className="">
-            <h3 className="sm:text-black text-white">{chat?.receiverEmail}</h3>
+            <h3 className="sm:text-black text-white">
+              {selectedChatRoom?.receiverEmail}
+            </h3>
             <span className="text-[0.9em] sm:text-gray-400 text-white">
-              {chat?.online ? "online" : "offline"}
+              {selectedChatRoom?.online ? "online" : "offline"}
             </span>
           </div>
         </div>
-        <div className="flex-1 sm:bg-white bg-gray-100 rounded shadow-sm p-2 overflow-y-auto">
+        <div
+          className="flex-1 sm:bg-white bg-gray-100 rounded shadow-sm p-2 overflow-y-auto"
+          ref={chatBoxRef}
+        >
           <div className="">
             {chatMessages?.map((message, index) => {
               return (
-                <div key={index}>
-                  <span
+                <div key={index} className="">
+                  <div
                     className={`${
-                      message.chatId.split("_")[0] === chat?.senderEmail
+                      loggedInUser === message.senderEmail
                         ? "text-right"
                         : "text-left"
-                    }`}
+                    }  mb-2`}
                   >
-                    {message.message}
-                  </span>
+                    <span
+                      className={`${
+                        loggedInUser === message.senderEmail
+                          ? "bg-telegram-light text-white rounded-bl-lg"
+                          : "sm:bg-gray-100 bg-white  text-telegram rounded-br-lg"
+                      }  mb-2 inline-block p-2 rounded-t-lg `}
+                    >
+                      {message.content}
+                    </span>
+                  </div>
                 </div>
               );
             })}
@@ -156,7 +206,8 @@ const MessageSection = () => {
               <ChatInput
                 icon="bi bi-send-fill px-2 bg-telegram-default text-white rounded"
                 action={sendMessage}
-                name="search"
+                name="chat_message"
+                placeholder="write a message"
               />
             </div>
           </div>

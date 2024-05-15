@@ -6,12 +6,21 @@ import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { AuthData } from "../contexts/AuthWrapper";
 import { Client, over } from "stompjs";
+import { jwtDecode } from "jwt-decode";
 
 export type ChatRoom = {
   chatId: string;
   online: boolean;
   senderEmail: string;
   receiverEmail: string;
+};
+
+type TokenData = {
+  email: string;
+  exp: number;
+  iat: number;
+  role: string;
+  sub: string;
 };
 
 const ChatContainer = () => {
@@ -23,9 +32,74 @@ const ChatContainer = () => {
 
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
 
-  const [selectedChat, setSelectedChat] = useState<ChatRoom>();
+  const [loggedInUser, setLoggedInUser] = useState<string>();
+
+  const [newMessage, setNewMessage] = useState<number>();
+
+  const params = useParams();
 
   const { logout, authenticate } = AuthData();
+
+  function onConnected() {
+    loadUserChatInfor();
+
+    const decodedJWT: TokenData = jwtDecode(authenticate.token as string);
+
+    const loggedInUser = decodedJWT.email;
+
+    console.log("Logged In User");
+    console.log(loggedInUser);
+
+    setLoggedInUser(loggedInUser);
+
+    connection.current?.subscribe(
+      `/user/${loggedInUser}/queue/messages`,
+      (payload) => {
+        console.log("Message sent");
+
+        const data = JSON.parse(payload.body);
+        setNewMessage(data.id);
+      }
+    );
+
+    connection.current?.subscribe(`/user/public`, loadUserChatInfor);
+
+    connection.current?.send(
+      "/app/user.online",
+      {},
+      JSON.stringify({ email: decodedJWT.email })
+    );
+  }
+
+  function onError() {
+    console.log("Error occurred while connecting to websocket");
+  }
+
+  async function loadUserChatInfor() {
+    try {
+      const response = await fetch(
+        "http://localhost:3001/chatRooms",
+
+        {
+          method: "Get",
+          headers: {
+            Authorization: `Bearer ${authenticate.token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error();
+      }
+
+      const data: ChatRoom[] = await response.json();
+      console.log(data);
+
+      setChatRooms([...data]);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   useEffect(() => {
     if (!authenticate.isAuthenticated) {
@@ -36,54 +110,15 @@ const ChatContainer = () => {
 
     const stompClient = over(socket);
 
-    socket.addEventListener("open", (event) => {
-      socket.send("Connection established");
-    });
-
-    socket.addEventListener("message", (event) => {
-      console.log("Message from server", event.data);
-    });
-
     connection.current = stompClient;
 
-    async function loadUserChatInfor() {
-      try {
-        const response = await fetch(
-          "http://localhost:3001/chatRooms",
-
-          {
-            method: "Get",
-            headers: {
-              Authorization: `Bearer ${authenticate.token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error();
-        }
-
-        const data = await response.json();
-        console.log(data);
-        setChatRooms([...data]);
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    loadUserChatInfor();
+    stompClient.connect({}, onConnected, onError);
 
     return () =>
       connection.current?.disconnect(() => {
         console.log("Disconnected from WebSocket server");
       });
   }, []);
-
-  const params = useParams();
-
-  const chat = chatRooms.filter(
-    (chatroom) => chatroom.chatId === params.chatId
-  );
 
   return (
     <>
@@ -109,6 +144,7 @@ const ChatContainer = () => {
                   icon="bi bi-search px-2"
                   action={() => {}}
                   name="search"
+                  placeholder="search"
                 />
               </div>
               <div className="p-2 flex-1  bg-white overflow-y-scroll shadow-sm rounded">
@@ -116,7 +152,8 @@ const ChatContainer = () => {
                   {chatRooms.length === 0 ? (
                     <>
                       <span className="text-center">
-                        You have no friend(s). Send an Invite{" "}
+                        You have no friend(s) to chat with, check your blacklist
+                        or Send an Invite
                         <i className="bi bi-send-plus-fill text-xl text-telegram-default"></i>
                       </span>
                     </>
@@ -129,7 +166,6 @@ const ChatContainer = () => {
                           full_name={chat.receiverEmail}
                           image=""
                           online={chat.online}
-                          setSelectedChat={() => setSelectedChat(chat)}
                         />
                       );
                     })
@@ -141,12 +177,19 @@ const ChatContainer = () => {
           <div className="sm:w-[70%] relative">
             <div
               className={`hidden absolute inset-0 sm:flex justify-center items-center rounded ${
-                chat.length != 0 ? "bg-transparent" : "bg-white"
+                params.chatId ? "bg-transparent" : "bg-white"
               }`}
             >
               Select a chat to start messaging
             </div>
-            <Outlet context={[selectedChat, connection.current]} />
+            <Outlet
+              context={[
+                newMessage,
+                chatRooms,
+                connection.current,
+                loggedInUser,
+              ]}
+            />
           </div>
         </div>
       </div>

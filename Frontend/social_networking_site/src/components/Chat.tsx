@@ -5,22 +5,13 @@ type ChatProp = {
   full_name: string;
   online: boolean;
   chatid: string;
-  setSelectedChat: () => void;
 };
 
-const Chat = ({
-  online,
-  image,
-  full_name,
-  chatid,
-  setSelectedChat,
-}: ChatProp) => {
+const Chat = ({ online, image, full_name, chatid }: ChatProp) => {
   return (
     <NavLink
-      onClick={() => setSelectedChat()}
       to={`${chatid}`}
       className={({ isActive }) => {
-        // setSelectedChat();
         return (
           "flex border-b-[0.1em] px-5 py-2 hover:bg-gray-100 cursor-pointer items-center " +
           (isActive ? "bg-gray-100" : " bg-white")

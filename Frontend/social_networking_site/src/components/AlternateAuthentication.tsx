@@ -11,6 +11,7 @@ const AlternateAuthentication = () => {
   const loginGoogleOauth = useGoogleLogin({
     onSuccess: (authResponse) => {
       async function returnCode() {
+        console.log(authResponse);
         try {
           const response = await fetch(
             `http://localhost:3001/auth/oauth_google_callback?code=${authResponse.code}`
