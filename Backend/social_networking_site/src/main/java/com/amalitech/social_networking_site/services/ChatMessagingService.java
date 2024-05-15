@@ -5,36 +5,32 @@ import com.amalitech.social_networking_site.dto.requests.chat.CMessage;
 import com.amalitech.social_networking_site.entities.ChatMessage;
 import com.amalitech.social_networking_site.repositories.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatMessagingService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomService chatRoomService;
-    private final SimpMessagingTemplate simpMessagingTemplate;
 
 
 
-    public void save(CMessage message){
-
-        String chatId = chatRoomService.getChatRoomId(message.senderEmail(), message.receiverEmail());
-
+    public ChatMessage save(CMessage message){
 
         ChatMessage chatMessage = ChatMessage.builder()
-                .chatId(chatId)
+                .chatId(message.chatId())
+                .senderEmail(message.senderEmail())
                 .content(message.content())
                 .build();
 
 
-
-        chatMessageRepository.save(chatMessage);
-
-       simpMessagingTemplate.convertAndSendToUser(message.senderEmail(), "/queue/messages", message);
+        return chatMessageRepository.save(chatMessage);
     }
 
 

@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,6 +34,7 @@ public class UserService {
     final private InviteRepository inviteRepository;
     final private ContactRepository contactRepository;
     final private ChatRoomService chatRoomService;
+    final private CloudinaryService cloudinaryService;
 
     @Value("${upload.profile.directory}")
     private String upload_profile_directory;
@@ -61,37 +63,25 @@ public class UserService {
     }
 
 
-    public String changeUserProfilePic(MultipartFile file) {
+    public String changeUserProfilePic(MultipartFile file) throws IOException, GeneralSecurityException {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         String email = authentication.getName();
 
-        User user = userRepository.findByEmail(email).orElseThrow();
-
-
-        String server_pic_url = "http://localhost:3001/profilePics/" + user.getUsername() + ".png";
-
-
-        String proPicPath = String.format("%s/%s", upload_profile_directory, user.getUsername() + ".png");
-
-        if (user.getProfile().getFilePath() != null) {   // removing existing profile pic
-
-            File existingPic = new File(proPicPath);
-
-            existingPic.delete();
-
-        }
-
-        user.getProfile().setFilePath(server_pic_url);
-        userRepository.save(user);
         try {
-            file.transferTo(new File(proPicPath));
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+            String imageUrl = cloudinaryService.uploadFile(file).get("url").toString();
 
-        return String.format("Profile picture updated successfully : %s", file.getOriginalFilename());
+            User user = userRepository.findByEmail(email).orElseThrow();
+
+            user.getProfile().setFilePath(imageUrl);
+
+            userRepository.save(user);
+
+            return "Profile pic updated successfully";
+        }catch (Exception e){
+            throw new IllegalArgumentException("Error occurred while uploading image.");
+        }
 
     }
 
@@ -123,26 +113,23 @@ public class UserService {
 
         Optional<Invite> senderToReceiver = inviteRepository.findBySenderAndReceiver(sender, receiver.getEmail());
 
-        if(senderToReceiver.isPresent()){
+        if (senderToReceiver.isPresent()) {
             throw new IllegalArgumentException(String.format("You have already sent and invite to %s", receiver.getEmail()));
         }
 
         Optional<Invite> receiverToSender = inviteRepository.findBySenderAndReceiver(receiver, sender.getEmail());
 
-        if(receiverToSender.isPresent()){
+        if (receiverToSender.isPresent()) {
             throw new IllegalArgumentException(String.format("%s has already sent you an invite.", receiver.getEmail()));
 
         }
 
         Optional<Contact> optionalContact = contactRepository.findByOwnerAndEmail(sender, receiver.getEmail());
 
-        if(optionalContact.isPresent()){
+        if (optionalContact.isPresent()) {
 
             throw new IllegalArgumentException(String.format("You and %s are friends. Refresh to see current update", receiver.getEmail()));
         }
-
-
-
 
 
         Invite userInvite = Invite.builder()
@@ -153,11 +140,11 @@ public class UserService {
         inviteRepository.save(userInvite);
     }
 
-    public String acceptUserInvite(String senderEmail , String receiverEmail) {
+    public String acceptUserInvite(String senderEmail, String receiverEmail) {
 
         Optional<User> optionalUser = userRepository.findByEmail(senderEmail);
 
-        if(optionalUser.isEmpty()){
+        if (optionalUser.isEmpty()) {
 
             throw new IllegalArgumentException("Invite sender not found.");
         }
@@ -201,11 +188,11 @@ public class UserService {
 
     }
 
-    public String declineInvite(String senderEmail , String receiverEmail){
+    public String declineInvite(String senderEmail, String receiverEmail) {
 
         Optional<User> optionalUser = userRepository.findByEmail(senderEmail);
 
-        if(optionalUser.isEmpty()){
+        if (optionalUser.isEmpty()) {
 
             throw new IllegalArgumentException("Invite sender not found.");
         }
@@ -214,7 +201,7 @@ public class UserService {
 
         Optional<Invite> optionalInvite = inviteRepository.findBySenderAndReceiver(sender, receiverEmail);
 
-        if(optionalInvite.isEmpty()){
+        if (optionalInvite.isEmpty()) {
             throw new IllegalArgumentException("Invite does not exist");
         }
 
@@ -225,20 +212,20 @@ public class UserService {
     }
 
 
-    public String setUserContactStatus(ContactStatusDTO contactStatusDTO, User owner){
+    public String setUserContactStatus(ContactStatusDTO contactStatusDTO, User owner) {
 
 
         Optional<Contact> optionalContact = contactRepository.findByOwnerAndEmail(owner, contactStatusDTO.contact());
 
-        if(optionalContact.isEmpty()){
+        if (optionalContact.isEmpty()) {
             throw new IllegalArgumentException("Contact does not exist");
         }
 
         Contact contact = optionalContact.get();
 
-        if(contactStatusDTO.status().equals("BLACKLIST")){
+        if (contactStatusDTO.status().equals("BLACKLIST")) {
             contact.setContactState(Utilities.ContactState.WHITELIST);
-        }else {
+        } else {
             contact.setContactState(Utilities.ContactState.BLACKLIST);
 
         }
@@ -256,7 +243,7 @@ public class UserService {
 
     }
 
-    private String findInviteSenderEmail(User inviteSender){
+    private String findInviteSenderEmail(User inviteSender) {
 
         var optionalUser = userRepository.findById(inviteSender.getId());
 

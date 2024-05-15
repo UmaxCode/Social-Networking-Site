@@ -17,9 +17,11 @@ public class ChatMessage {
 
     @Id
     @GeneratedValue
-    private String id;
+    private Integer id;
 
     private String chatId;
+
+    private String senderEmail;
 
     private String content;
 

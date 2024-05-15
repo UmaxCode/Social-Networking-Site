@@ -12,17 +12,20 @@ import com.amalitech.social_networking_site.services.ChatRoomService;
 import com.amalitech.social_networking_site.services.UserService;
 import com.amalitech.social_networking_site.utilities.Utilities;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
-
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 public class ChatController {
@@ -30,20 +33,26 @@ public class ChatController {
     private final ChatMessagingService chatMessagingService;
     private final ChatRoomService chatRoomService;
     private final UserService userService;
+    private final SimpMessagingTemplate messagingTemplate;
+
 
 
     @MessageMapping("/chat")
     public void processMessage(
             @Payload CMessage message
     ) {
+         var savedMessage = chatMessagingService.save(message);
 
-        chatMessagingService.save(message);
+        messagingTemplate.convertAndSendToUser(message.receiverEmail(), "/queue/messages", savedMessage);
+
     }
 
     @MessageMapping("/user.online")
     @SendTo("/user/public")
     public List<ChatRoom> userOnline(
-            @Payload OnlineUser user) {
+            @Payload OnlineUser user, SimpMessageHeaderAccessor headerAccessor) {
+
+        headerAccessor.getSessionAttributes().put("email", user.email());
 
         return chatRoomService.setChatRoomState(user, true);
 

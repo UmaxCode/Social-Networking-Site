@@ -22,6 +22,7 @@ public class ChatRoomService {
         var chatIdOptional = chatRoomRepository.findBySenderEmailAndReceiverEmail(senderEmail, receiverEmail)
                 .map(ChatRoom::getChatId);
 
+
         return chatIdOptional.orElse(null);
 
     }
@@ -55,12 +56,11 @@ public class ChatRoomService {
 
         List<ChatRoom> chatRooms = chatRoomRepository.findBySenderEmail(onlineUser.email());
 
-
+        if(chatRooms.isEmpty()){
+            return null;
+        }
 
         chatRooms.forEach((chatRoom)-> chatRoom.setOnline(value));
-
-
-
 
        return chatRoomRepository.saveAll(chatRooms);
 

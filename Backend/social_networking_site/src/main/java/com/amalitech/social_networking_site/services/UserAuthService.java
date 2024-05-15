@@ -124,7 +124,7 @@ public class UserAuthService {
 
         String lastname = String.valueOf(body.get("family_name"));
 
-        String picture = String.valueOf(body.get("picture"));
+//        String picture = String.valueOf(body.get("picture"));
 
 
         Optional<User> optionalUser = userRepository.findByEmail(email);
@@ -145,7 +145,6 @@ public class UserAuthService {
             username = user.getUsername();
 
             var profile = UserProfile.builder()
-                    .filePath(picture)
                     .user(savedUser)
                     .build();
 
