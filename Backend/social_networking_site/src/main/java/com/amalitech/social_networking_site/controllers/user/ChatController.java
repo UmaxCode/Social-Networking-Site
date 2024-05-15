@@ -1,6 +1,7 @@
 package com.amalitech.social_networking_site.controllers.user;
 
 import com.amalitech.social_networking_site.dto.requests.chat.CMessage;
+import com.amalitech.social_networking_site.dto.requests.chat.ChatRoomDTO;
 import com.amalitech.social_networking_site.dto.requests.chat.OnlineUser;
 import com.amalitech.social_networking_site.dto.response.ErrorMessage;
 import com.amalitech.social_networking_site.entities.ChatMessage;
@@ -84,7 +85,7 @@ public class ChatController {
 
             List<Contact> userContacts = sender.getContacts().stream().filter((contact -> contact.getContactState().equals(Utilities.ContactState.WHITELIST))).toList();
 
-            List<ChatRoom> chatRooms = userContacts.stream().map((contact -> chatRoomService.findBySenderEmailAndReceiverEmail(sender.getEmail(), contact.getEmail()))).toList();
+            List<ChatRoomDTO> chatRooms = userContacts.stream().map((contact -> new ChatRoomDTO(chatRoomService.findBySenderEmailAndReceiverEmail(sender.getEmail(), contact.getEmail()), userService.getUserFromEmail(contact.getEmail()).getProfile().getFilePath()))).toList();
 
             return ResponseEntity.ok(chatRooms);
 

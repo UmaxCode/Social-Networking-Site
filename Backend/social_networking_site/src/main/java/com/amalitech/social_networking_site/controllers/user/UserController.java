@@ -75,8 +75,8 @@ public class UserController {
     @PutMapping("/profile_pic_update")
     public ResponseEntity<?> updateProfilePic(@RequestParam("file") MultipartFile file) {
         try {
-            String message = userService.changeUserProfilePic(file);
-            return ResponseEntity.ok(new SuccessMessage(message));
+            String url = userService.changeUserProfilePic(file);
+            return ResponseEntity.ok(new ProfileUpdateResponse("Profile pic updated successfully", url));
         } catch (Exception err) {
             return ResponseEntity.status(400).body(new ErrorMessage(err.getMessage()));
         }

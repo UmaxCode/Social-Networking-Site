@@ -107,7 +107,7 @@ public class UserAuthService {
         String generatedToken = jwtAuthenticationService.generateToken(userData.email(), TokenSubject.LOGIN);
 
 
-        return new UserAuthenticationResponse("You are logged in", generatedToken, user.getUsername());
+        return new UserAuthenticationResponse("You are logged in", generatedToken, user.getUsername(), user.getProfile().getFilePath());
     }
 
 
@@ -130,6 +130,7 @@ public class UserAuthService {
         Optional<User> optionalUser = userRepository.findByEmail(email);
 
         String username = null;
+        User savedUser;
 
         if (optionalUser.isEmpty()) {
 
@@ -139,23 +140,25 @@ public class UserAuthService {
                     .isActive(true)
                     .username(firstname + (UUID.randomUUID()).toString().split("-")[0])
                     .role(Role.REG_USER)
-                    .build();
-            var savedUser = userRepository.save(user);
 
-            username = user.getUsername();
+                    .build();
+            savedUser = userRepository.save(user);
 
             var profile = UserProfile.builder()
                     .user(savedUser)
+
                     .build();
 
             profileRepository.save(profile);
 
 
+        }else {
+            savedUser = optionalUser.get();
         }
 
         String generatedToken = jwtAuthenticationService.generateToken(email, TokenSubject.LOGIN);
 
-        return new UserAuthenticationResponse("Access granted. You're now logged in.", generatedToken, optionalUser.isPresent()? optionalUser.get().getUsername(): username);
+        return new UserAuthenticationResponse("Access granted. You're now logged in.", generatedToken, savedUser.getUsername(), savedUser.getProfile().getFilePath());
 
     }
 

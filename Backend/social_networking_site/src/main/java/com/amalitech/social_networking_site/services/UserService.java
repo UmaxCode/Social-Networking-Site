@@ -78,7 +78,7 @@ public class UserService {
 
             userRepository.save(user);
 
-            return "Profile pic updated successfully";
+            return user.getProfile().getFilePath();
         }catch (Exception e){
             throw new IllegalArgumentException("Error occurred while uploading image.");
         }
