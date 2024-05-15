@@ -2,13 +2,14 @@ import Chat from "../components/Chat";
 import ChatInput from "../components/ChatInput";
 import { Link, Outlet, useParams, useNavigate } from "react-router-dom";
 import { Fragment, useEffect, useState, useRef } from "react";
+import avataImage from "../assets/avatar.jpg";
 import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { AuthData } from "../contexts/AuthWrapper";
 import { Client, over } from "stompjs";
 import { jwtDecode } from "jwt-decode";
 
-export type ChatRoom = {
+type ChatRoom = {
   chatId: string;
   online: boolean;
   senderEmail: string;
@@ -23,6 +24,11 @@ type TokenData = {
   sub: string;
 };
 
+export type ChatRoomResponse = {
+  chatRoom: ChatRoom;
+  receiver_profile: string | null;
+};
+
 const ChatContainer = () => {
   const navigate = useNavigate();
 
@@ -30,7 +36,7 @@ const ChatContainer = () => {
 
   const [open, setOpen] = useState(false);
 
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [chatRooms, setChatRooms] = useState<ChatRoomResponse[]>([]);
 
   const [loggedInUser, setLoggedInUser] = useState<string>();
 
@@ -38,7 +44,7 @@ const ChatContainer = () => {
 
   const params = useParams();
 
-  const { logout, authenticate } = AuthData();
+  const { logout, authenticate, profile } = AuthData();
 
   function onConnected() {
     loadUserChatInfor();
@@ -92,7 +98,7 @@ const ChatContainer = () => {
         throw new Error();
       }
 
-      const data: ChatRoom[] = await response.json();
+      const data: ChatRoomResponse[] = await response.json();
       console.log(data);
 
       setChatRooms([...data]);
@@ -134,7 +140,9 @@ const ChatContainer = () => {
 
                   <div className="me-3 h-[30px] w-[30px]">
                     <img
-                      src=""
+                      src={
+                        profile === "null" ? avataImage : (profile as string)
+                      }
                       alt=""
                       className="h-[100%] w-[100%] rounded-full"
                     />
@@ -162,10 +170,14 @@ const ChatContainer = () => {
                       return (
                         <Chat
                           key={index}
-                          chatid={chat.chatId}
-                          full_name={chat.receiverEmail}
-                          image=""
-                          online={chat.online}
+                          chatid={chat.chatRoom.chatId}
+                          full_name={chat.chatRoom.receiverEmail}
+                          image={
+                            chat.receiver_profile
+                              ? chat.receiver_profile
+                              : avataImage
+                          }
+                          online={chat.chatRoom.online}
                         />
                       );
                     })

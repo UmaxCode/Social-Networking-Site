@@ -69,7 +69,7 @@ const UserSettings = () => {
 
   const navigate = useNavigate();
 
-  const { authenticate } = AuthData();
+  const { authenticate, setProfilePic } = AuthData();
 
   useEffect(() => {
     if (!authenticate.isAuthenticated) {
@@ -100,6 +100,7 @@ const UserSettings = () => {
     })
       .then((res) => res.json())
       .then((data) => {
+        setProfilePic(data.url);
         toast.success(data.message);
       })
       .catch((error) => console.log(error))
@@ -341,7 +342,11 @@ const UserSettings = () => {
               />
               <div className="text-red-400 px-2">{formErrors.conpassword}</div>
             </div>
-            <ActionButton text="Change Password" reqSent={processReq} />
+            <ActionButton
+              text="Change Password"
+              reqSent={processReq}
+              styles="bg-telegram-light text-white py-2 px-4 rounded-md hover:bg-telegram-default focus:bg-telegram-default"
+            />
           </div>
         </form>
         <p className="py-2 text-gray-500 text-[1.3em] capitalize border-b-2 mb-2 mt-4">

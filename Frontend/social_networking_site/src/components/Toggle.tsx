@@ -1,4 +1,8 @@
-const Toggle = ({ enabled, toggleSwitch }) => {
+type ToggleProp = {
+  enabled: boolean;
+  toggleSwitch: () => void;
+};
+const Toggle = ({ enabled, toggleSwitch }: ToggleProp) => {
   return (
     <div className="flex items-center">
       <button
@@ -42,7 +46,6 @@ const Toggle = ({ enabled, toggleSwitch }) => {
           )}
         </span>
       </button>
-      <span className="ml-2">{enabled ? "Accept" : "Decline"}</span>
     </div>
   );
 };

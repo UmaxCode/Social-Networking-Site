@@ -202,12 +202,12 @@ const Invitation = () => {
             sendInvite(firstSelection);
           }}
         >
-          <div className="flex  gap-3 mb-8 items-center">
+          <div className="flex  gap-3 mb-8 items-center mt-4">
             <div className="flex-1 ">
               <Listbox value={firstSelection} onChange={setFirstSelection}>
                 {({ open }) => (
                   <>
-                    <div className="relative mt-2">
+                    <div className="relative">
                       <Listbox.Button className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-telegram-default sm:text-sm sm:leading-6">
                         <span className="flex items-center">
                           <i className="bi bi-person-fill-add h-5 w-5 flex-shrink-0 rounded-full"></i>
@@ -291,7 +291,11 @@ const Invitation = () => {
               </Listbox>
             </div>
             <div className="">
-              <ActionButton text="Send Invite" reqSent={processReq.send} />
+              <ActionButton
+                text="Send Invite"
+                reqSent={processReq.send}
+                styles="bg-green-300 text-white px-2 py-1 rounded hover:bg-green-400"
+              />
             </div>
           </div>
         </form>
@@ -394,8 +398,13 @@ const Invitation = () => {
             <div className="flex items-center gap-2">
               <Toggle enabled={enabled} toggleSwitch={toggleSwitch} />
               <ActionButton
-                text="Accept or Decline"
+                text={`${enabled ? "Accept" : "Decline"}`}
                 reqSent={processReq.accept}
+                styles={` ${
+                  enabled
+                    ? "bg-green-300 hover:bg-green-400"
+                    : "bg-red-300 hover:bg-red-400"
+                }  text-white px-2 py-1 rounded `}
               />
             </div>
           </div>

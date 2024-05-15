@@ -19,7 +19,7 @@ const Chat = ({ online, image, full_name, chatid }: ChatProp) => {
       }}
     >
       <div className="me-3 h-[30px] w-[30px] relative">
-        <img src="" alt="" className="h-[100%] w-[100%] rounded-full" />
+        <img src={image} alt="" className="h-[100%] w-[100%] rounded-full" />
         <div
           className={`absolute h-[6px] w-[6px] ${
             online ? "bg-green-400" : "bg-gray-300"

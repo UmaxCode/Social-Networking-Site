@@ -1,14 +1,12 @@
 type ButtonProp = {
   reqSent: boolean;
   text: string;
+  styles: string;
 };
 
-const ActionButton = ({ reqSent, text }: ButtonProp) => {
+const ActionButton = ({ reqSent, text, styles }: ButtonProp) => {
   return (
-    <button
-      type="submit"
-      className="w-full bg-telegram-light text-white py-2 px-4 rounded-md hover:bg-telegram-default focus:outline-none focus:bg-telegram-default"
-    >
+    <button type="submit" className={`w-full focus:outline-none ${styles}`}>
       {reqSent && (
         <i className="bi bi-arrow-clockwise inline-block animate-spin me-1"></i>
       )}

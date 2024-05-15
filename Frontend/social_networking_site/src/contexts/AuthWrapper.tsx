@@ -8,7 +8,9 @@ type AuthType = {
 type ContextValue = {
   login: (token: string) => void;
   logout: () => void;
+  setProfilePic: (url: string) => void;
   authenticate: AuthType;
+  profile: string | null;
 };
 
 const initialContextValue: ContextValue = {
@@ -18,6 +20,8 @@ const initialContextValue: ContextValue = {
     token: null,
     isAuthenticated: false,
   },
+  setProfilePic: function (url: string): void {},
+  profile: null,
 };
 
 export const AuthContext = createContext(initialContextValue);
@@ -30,6 +34,10 @@ const AuthWrapper = (props: { children: React.ReactNode }) => {
     isAuthenticated: sessionStorage.getItem("token") ? true : false,
   });
 
+  const [profile, setProfile] = useState<string | null>(
+    sessionStorage.getItem("profile") || null
+  );
+
   const logout = () => {
     sessionStorage.removeItem("token");
     setAuthenticate({ token: null, isAuthenticated: false });
@@ -41,10 +49,17 @@ const AuthWrapper = (props: { children: React.ReactNode }) => {
     console.log(authenticate);
   };
 
+  const setProfilePic = (url: string) => {
+    sessionStorage.setItem("profile", url);
+    setProfile(url);
+  };
+
   const contextValue: ContextValue = {
     login,
     logout,
     authenticate,
+    setProfilePic,
+    profile,
   };
   return (
     <AuthContext.Provider value={contextValue}>

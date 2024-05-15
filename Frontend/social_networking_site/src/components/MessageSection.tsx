@@ -6,8 +6,9 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
+import avataImage from "../assets/avatar.jpg";
 import { Dialog, Transition } from "@headlessui/react";
-import { ChatRoom } from "../containers/ChatContainer";
+import { ChatRoomResponse } from "../containers/ChatContainer";
 import { AuthData } from "../contexts/AuthWrapper";
 import { Client } from "stompjs";
 
@@ -24,13 +25,15 @@ type Message = {
 
 const MessageSection = () => {
   const [newMessage, chatRooms, connection, loggedInUser] =
-    useOutletContext<[string, ChatRoom[], Client, string]>();
+    useOutletContext<[string, ChatRoomResponse[], Client, string]>();
 
   const params = useParams();
 
   const selectedChatRoom = chatRooms.filter(
-    (chatRoom) => chatRoom.chatId === params.chatId
+    (chatRoom) => chatRoom.chatRoom.chatId === params.chatId
   )[0];
+
+  console.log(selectedChatRoom);
 
   const [chatMessages, setChatMessages] = useState<Message[]>();
 
@@ -51,7 +54,7 @@ const MessageSection = () => {
 
   async function loadUserMessages() {
     if (selectedChatRoom) {
-      const url = `http://localhost:3001/messages/${selectedChatRoom.senderEmail}/${selectedChatRoom.receiverEmail}`;
+      const url = `http://localhost:3001/messages/${selectedChatRoom.chatRoom.senderEmail}/${selectedChatRoom.chatRoom.receiverEmail}`;
 
       try {
         const response = await fetch(url, {
@@ -87,9 +90,9 @@ const MessageSection = () => {
   function sendMessage(data: string) {
     if (data?.trim() && connection) {
       const chatMessage = {
-        chatId: selectedChatRoom.chatId,
-        senderEmail: selectedChatRoom.senderEmail,
-        receiverEmail: selectedChatRoom.receiverEmail,
+        chatId: selectedChatRoom.chatRoom.chatId,
+        senderEmail: selectedChatRoom.chatRoom.senderEmail,
+        receiverEmail: selectedChatRoom.chatRoom.receiverEmail,
         content: data.trim(),
       };
 
@@ -137,19 +140,29 @@ const MessageSection = () => {
             <i className="bi bi-arrow-left me-3 text-white"></i>
           </Link>
           <div className="me-3 h-[30px] w-[30px] relative">
-            <img src="" alt="" className="h-[100%] w-[100%] rounded-full" />
+            <img
+              src={
+                selectedChatRoom?.receiver_profile
+                  ? selectedChatRoom?.receiver_profile
+                  : avataImage
+              }
+              alt=""
+              className="h-[100%] w-[100%] rounded-full"
+            />
             <div
               className={`absolute h-[6px] w-[6px] ${
-                selectedChatRoom?.online ? "bg-green-400" : "bg-gray-300"
+                selectedChatRoom?.chatRoom.online
+                  ? "bg-green-400"
+                  : "bg-gray-300"
               } rounded-full bottom-0 right-0`}
             ></div>
           </div>
           <div className="">
             <h3 className="sm:text-black text-white">
-              {selectedChatRoom?.receiverEmail}
+              {selectedChatRoom?.chatRoom.receiverEmail}
             </h3>
             <span className="text-[0.9em] sm:text-gray-400 text-white">
-              {selectedChatRoom?.online ? "online" : "offline"}
+              {selectedChatRoom?.chatRoom.online ? "online" : "offline"}
             </span>
           </div>
         </div>

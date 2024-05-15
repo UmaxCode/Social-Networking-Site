@@ -6,7 +6,7 @@ import { AuthData } from "../contexts/AuthWrapper";
 const AlternateAuthentication = () => {
   const navigate = useNavigate();
 
-  const { login } = AuthData();
+  const { login, setProfilePic } = AuthData();
 
   const loginGoogleOauth = useGoogleLogin({
     onSuccess: (authResponse) => {
@@ -23,6 +23,8 @@ const AlternateAuthentication = () => {
           const data = await response.json();
           console.log(data);
           login(data.token);
+          setProfilePic(data.profile_pic);
+
           toast.success(`${data.message}`);
           setTimeout(() => navigate(`/${data.username}/chats`), 3000);
         } catch (error) {

@@ -77,7 +77,11 @@ const ForgotPassword = () => {
           <div className="text-red-400 px-2">{formErrors.email}</div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 items-center">
-          <ActionButton text="Reset" reqSent={processReq} />
+          <ActionButton
+            text="Reset"
+            reqSent={processReq}
+            styles="bg-telegram-light text-white py-2 px-4 rounded-md hover:bg-telegram-default focus:bg-telegram-default"
+          />
           <span className="text-center flex flex-col items-center p-3">
             <span className="w-[2px] h-[8px] bg-gray-400"></span>
             <span className="text-gray-400">OR</span>
