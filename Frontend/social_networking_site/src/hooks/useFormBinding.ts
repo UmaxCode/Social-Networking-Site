@@ -52,22 +52,36 @@ export const useFormBinding = (initialFormInput: any): any => {
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$/;
 
     if (
+      data.password != undefined &&
+      data.oldpassword != undefined &&
       !passwordRegex.test(data.password) &&
+      data.oldpassword &&
       !passwordRegex.test(data.oldpassword)
     ) {
       formValidation.password =
         "password must be at least 8 characters with a combination of Upper, lower, special characters and numbers";
       formValidation.oldpassword =
         "password must be at least 8 characters with a combination of Upper, lower, special characters and numbers";
-    } else if (!passwordRegex.test(data.password)) {
+    } else if (
+      data.password != undefined &&
+      !passwordRegex.test(data.password)
+    ) {
       formValidation.password =
         "password must be at least 8 characters with a combination of Upper, lower, special characters and numbers";
-    } else if (!passwordRegex.test(data.oldpassword)) {
+    } else if (
+      data.oldpassword != undefined &&
+      !passwordRegex.test(data.oldpassword)
+    ) {
       formValidation.oldpassword =
         "password must be at least 8 characters with a combination of Upper, lower, special characters and numbers";
-    } else if (data.oldpassword === data.password) {
+    } else if (
+      data.oldpassword != undefined &&
+      data.oldpassword === data.password
+    ) {
       formValidation.password = "use a different password";
-    } else if (data.conpassword !== data.password) {
+    }
+
+    if (data.conpassword != undefined && data.conpassword !== data.password) {
       formValidation.conpassword = "password do not match";
     }
 

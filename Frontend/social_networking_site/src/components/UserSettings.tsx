@@ -48,7 +48,10 @@ const formData = new FormData();
 const UserSettings = () => {
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const [processReq, setProcessReq] = useState(false);
+  const [processReq, setProcessReq] = useState({
+    password: false,
+    profile: false,
+  });
 
   const [userDetails, setUserDetails] = useState<UserDetailsType>();
 
@@ -85,7 +88,9 @@ const UserSettings = () => {
       .catch((error) => toast.error(error.message));
   }, [userDetailsUpdate.infoToggler, userDetailsUpdate.contactToggler]);
 
-  const updateFile = () => {
+  const updateFile = (event: FormEvent) => {
+    event.preventDefault();
+    setProcessReq({ ...processReq, profile: true });
     formData.append(
       "file",
       fileSeletion.file,
@@ -104,12 +109,16 @@ const UserSettings = () => {
         toast.success(data.message);
       })
       .catch((error) => console.log(error))
-      .finally(() =>
+      .finally(() => {
         setUserDetailsUpdated({
           ...userDetailsUpdate,
           ["infoToggler"]: !userDetailsUpdate.infoToggler,
-        })
-      );
+        });
+
+        setProcessReq({ ...processReq, profile: false });
+
+        closeModal();
+      });
   };
 
   const changePassword = (event: FormEvent) => {
@@ -118,7 +127,7 @@ const UserSettings = () => {
     const validationState = validator(formInput);
 
     if (validationState) {
-      setProcessReq(true);
+      setProcessReq({ ...processReq, password: true });
       useCrudOperation({
         method: "Put",
         url: "http://localhost:3001/user/change_password",
@@ -135,7 +144,7 @@ const UserSettings = () => {
         .catch((error) => {
           toast.error(error.message);
         })
-        .finally(() => setProcessReq(false));
+        .finally(() => setProcessReq({ ...processReq, password: false }));
     }
   };
 
@@ -344,7 +353,7 @@ const UserSettings = () => {
             </div>
             <ActionButton
               text="Change Password"
-              reqSent={processReq}
+              reqSent={processReq.password}
               styles="bg-telegram-light text-white py-2 px-4 rounded-md hover:bg-telegram-default focus:bg-telegram-default"
             />
           </div>
@@ -437,8 +446,7 @@ const UserSettings = () => {
                     >
                       cancel
                     </button>
-                    <button
-                      type="submit"
+                    {/* <button
                       className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
                       onClick={() => {
                         updateFile();
@@ -446,7 +454,14 @@ const UserSettings = () => {
                       }}
                     >
                       Save
-                    </button>
+                    </button> */}
+                    <form action="" onSubmit={updateFile}>
+                      <ActionButton
+                        text="save"
+                        reqSent={processReq.profile}
+                        styles="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                      />
+                    </form>
                   </div>
                 </Dialog.Panel>
               </Transition.Child>

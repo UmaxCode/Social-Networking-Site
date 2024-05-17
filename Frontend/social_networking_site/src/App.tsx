@@ -11,7 +11,6 @@ import ChatContainer from "./containers/ChatContainer";
 import ForgotPassword from "./components/ForgotPassword";
 import MessageSection from "./components/MessageSection";
 import UserSettings from "./components/UserSettings";
-import OauthRedirect from "./components/OauthRedirect";
 import Invitation from "./components/Invitation";
 
 function App() {
@@ -25,9 +24,6 @@ function App() {
           <Route path="settings" element={<UserSettings />} />
           <Route path="invites" element={<Invitation />} />
         </Route>
-
-        <Route path="/login/oauth2/code/google" element={<OauthRedirect />} />
-
         <Route path="/" element={<AuthenticationWrapper />}>
           <Route index element={<Signin />} />
           <Route path="signup" element={<Signup />} />

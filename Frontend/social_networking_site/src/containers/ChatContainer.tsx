@@ -9,13 +9,6 @@ import { AuthData } from "../contexts/AuthWrapper";
 import { Client, over } from "stompjs";
 import { jwtDecode } from "jwt-decode";
 
-type ChatRoom = {
-  chatId: string;
-  online: boolean;
-  senderEmail: string;
-  receiverEmail: string;
-};
-
 type TokenData = {
   email: string;
   exp: number;
@@ -24,9 +17,18 @@ type TokenData = {
   sub: string;
 };
 
-export type ChatRoomResponse = {
-  chatRoom: ChatRoom;
-  receiver_profile: string | null;
+export type UserContact = {
+  fullname: string;
+  email: string;
+  onlineStatus: boolean;
+  profilePic: string;
+  blackListed: boolean;
+};
+
+export type Message = {
+  receiverEmail: string;
+  senderEmail: string;
+  content: string;
 };
 
 const ChatContainer = () => {
@@ -36,39 +38,44 @@ const ChatContainer = () => {
 
   const [open, setOpen] = useState(false);
 
-  const [chatRooms, setChatRooms] = useState<ChatRoomResponse[]>([]);
+  const [userContacts, setUserContacts] = useState<UserContact[]>([]);
 
   const [loggedInUser, setLoggedInUser] = useState<string>();
 
-  const [newMessage, setNewMessage] = useState<number>();
+  const [newMessage, setNewMessage] = useState<Message>();
 
   const params = useParams();
 
   const { logout, authenticate, profile } = AuthData();
 
   function onConnected() {
-    loadUserChatInfor();
+    loadUserContacts();
 
     const decodedJWT: TokenData = jwtDecode(authenticate.token as string);
 
     const loggedInUser = decodedJWT.email;
-
-    console.log("Logged In User");
-    console.log(loggedInUser);
 
     setLoggedInUser(loggedInUser);
 
     connection.current?.subscribe(
       `/user/${loggedInUser}/queue/messages`,
       (payload) => {
-        console.log("Message sent");
-
         const data = JSON.parse(payload.body);
-        setNewMessage(data.id);
+
+        const receiverEmail = data.chatId
+          .split("_")
+          .filter((email: string) => email != data.senderEmail)[0];
+
+        setNewMessage({
+          ...newMessage,
+          receiverEmail: receiverEmail,
+          senderEmail: data.senderEmail,
+          content: data.content,
+        });
       }
     );
 
-    connection.current?.subscribe(`/user/public`, loadUserChatInfor);
+    connection.current?.subscribe(`/user/public`, loadUserContacts);
 
     connection.current?.send(
       "/app/user.online",
@@ -81,10 +88,10 @@ const ChatContainer = () => {
     console.log("Error occurred while connecting to websocket");
   }
 
-  async function loadUserChatInfor() {
+  async function loadUserContacts() {
     try {
       const response = await fetch(
-        "http://localhost:3001/chatRooms",
+        "http://localhost:3001/user/contacts",
 
         {
           method: "Get",
@@ -98,10 +105,10 @@ const ChatContainer = () => {
         throw new Error();
       }
 
-      const data: ChatRoomResponse[] = await response.json();
+      const data: UserContact[] = await response.json();
       console.log(data);
 
-      setChatRooms([...data]);
+      setUserContacts([...data]);
     } catch (error) {
       console.log(error);
     }
@@ -157,7 +164,7 @@ const ChatContainer = () => {
               </div>
               <div className="p-2 flex-1  bg-white overflow-y-scroll shadow-sm rounded">
                 <div className="bg-white flex flex-col gap-2">
-                  {chatRooms.length === 0 ? (
+                  {userContacts.length === 0 ? (
                     <>
                       <span className="text-center">
                         You have no friend(s) to chat with, check your blacklist
@@ -166,18 +173,17 @@ const ChatContainer = () => {
                       </span>
                     </>
                   ) : (
-                    chatRooms.map((chat, index) => {
+                    userContacts.map((contact, index) => {
                       return (
                         <Chat
                           key={index}
-                          chatid={chat.chatRoom.chatId}
-                          full_name={chat.chatRoom.receiverEmail}
+                          email={contact.email}
+                          full_name={contact.fullname}
                           image={
-                            chat.receiver_profile
-                              ? chat.receiver_profile
-                              : avataImage
+                            contact.profilePic ? contact.profilePic : avataImage
                           }
-                          online={chat.chatRoom.online}
+                          online={contact.onlineStatus}
+                          blackListed={contact.blackListed}
                         />
                       );
                     })
@@ -197,7 +203,7 @@ const ChatContainer = () => {
             <Outlet
               context={[
                 newMessage,
-                chatRooms,
+                userContacts,
                 connection.current,
                 loggedInUser,
               ]}

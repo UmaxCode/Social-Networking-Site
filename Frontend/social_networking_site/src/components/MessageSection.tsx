@@ -8,7 +8,7 @@ import {
 } from "react-router-dom";
 import avataImage from "../assets/avatar.jpg";
 import { Dialog, Transition } from "@headlessui/react";
-import { ChatRoomResponse } from "../containers/ChatContainer";
+import { UserContact } from "../containers/ChatContainer";
 import { AuthData } from "../contexts/AuthWrapper";
 import { Client } from "stompjs";
 
@@ -18,24 +18,22 @@ type File = {
 };
 
 type Message = {
-  chatId: string;
+  receiverEmail: string;
   senderEmail: string;
   content: string;
 };
 
 const MessageSection = () => {
-  const [newMessage, chatRooms, connection, loggedInUser] =
-    useOutletContext<[string, ChatRoomResponse[], Client, string]>();
+  const [newMessage, userContacts, connection, loggedInUser] =
+    useOutletContext<[Message, UserContact[], Client, string]>();
 
   const params = useParams();
 
-  const selectedChatRoom = chatRooms.filter(
-    (chatRoom) => chatRoom.chatRoom.chatId === params.chatId
+  const selectedContact = userContacts.filter(
+    (contact) => contact.email === params.chatId
   )[0];
 
-  console.log(selectedChatRoom);
-
-  const [chatMessages, setChatMessages] = useState<Message[]>();
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
 
   const inputFile = useRef<HTMLInputElement>(null);
 
@@ -45,16 +43,24 @@ const MessageSection = () => {
 
   const navigate = useNavigate();
 
-  const [messageToggle, setMessageToggle] = useState<boolean>();
-
   const [fileSeletion, setFilSelection] = useState<File>({
     fileSeleted: false,
     file: new Blob(),
   });
 
+  useEffect(() => {
+    if (newMessage !== undefined) {
+      if (newMessage.senderEmail === selectedContact.email) {
+        setChatMessages([...chatMessages, newMessage]);
+
+        scrollToBottom();
+      }
+    }
+  }, [newMessage]);
+
   async function loadUserMessages() {
-    if (selectedChatRoom) {
-      const url = `http://localhost:3001/messages/${selectedChatRoom.chatRoom.senderEmail}/${selectedChatRoom.chatRoom.receiverEmail}`;
+    if (selectedContact) {
+      const url = `http://localhost:3001/messages/${loggedInUser}/${selectedContact.email}`;
 
       try {
         const response = await fetch(url, {
@@ -71,8 +77,6 @@ const MessageSection = () => {
         const data = await response.json();
 
         setChatMessages([...data]);
-
-        console.log(data);
       } catch (error) {
         console.log(error);
       }
@@ -84,21 +88,26 @@ const MessageSection = () => {
       navigate("/");
     }
 
-    loadUserMessages().then(() => scrollToBottom());
-  }, [selectedChatRoom, messageToggle, newMessage]);
+    loadUserMessages();
+  }, [selectedContact]);
 
   function sendMessage(data: string) {
     if (data?.trim() && connection) {
       const chatMessage = {
-        chatId: selectedChatRoom.chatRoom.chatId,
-        senderEmail: selectedChatRoom.chatRoom.senderEmail,
-        receiverEmail: selectedChatRoom.chatRoom.receiverEmail,
+        senderEmail: loggedInUser,
+        receiverEmail: selectedContact.email,
         content: data.trim(),
       };
 
       connection.send("/app/chat", {}, JSON.stringify(chatMessage));
 
-      setMessageToggle(!messageToggle);
+      const newMessage: Message = {
+        receiverEmail: chatMessage.receiverEmail,
+        senderEmail: loggedInUser,
+        content: data.trim(),
+      };
+      setChatMessages([...chatMessages, newMessage]);
+      scrollToBottom();
     }
   }
 
@@ -107,7 +116,6 @@ const MessageSection = () => {
   }
 
   const openModal = (event: any) => {
-    console.log("Open file");
     const file = event.target.files[0];
 
     if (file) {
@@ -142,8 +150,8 @@ const MessageSection = () => {
           <div className="me-3 h-[30px] w-[30px] relative">
             <img
               src={
-                selectedChatRoom?.receiver_profile
-                  ? selectedChatRoom?.receiver_profile
+                selectedContact?.profilePic
+                  ? selectedContact?.profilePic
                   : avataImage
               }
               alt=""
@@ -151,18 +159,16 @@ const MessageSection = () => {
             />
             <div
               className={`absolute h-[6px] w-[6px] ${
-                selectedChatRoom?.chatRoom.online
-                  ? "bg-green-400"
-                  : "bg-gray-300"
+                selectedContact?.onlineStatus ? "bg-green-400" : "bg-gray-300"
               } rounded-full bottom-0 right-0`}
             ></div>
           </div>
           <div className="">
             <h3 className="sm:text-black text-white">
-              {selectedChatRoom?.chatRoom.receiverEmail}
+              {selectedContact?.email}
             </h3>
             <span className="text-[0.9em] sm:text-gray-400 text-white">
-              {selectedChatRoom?.chatRoom.online ? "online" : "offline"}
+              {selectedContact?.onlineStatus ? "online" : "offline"}
             </span>
           </div>
         </div>

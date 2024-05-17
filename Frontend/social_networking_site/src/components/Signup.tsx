@@ -140,7 +140,11 @@ const Signup = () => {
             <div className="text-red-400 px-2">{formErrors.conpassword}</div>
           </div>
 
-          <ActionButton text="Create Account" reqSent={processReq} />
+          <ActionButton
+            text="Create Account"
+            reqSent={processReq}
+            styles="bg-telegram-light text-white py-2 px-4 rounded-md hover:bg-telegram-default focus:bg-telegram-default"
+          />
           <p className="flex gap-2 justify-center my-3">
             Already have an account?
             <Link to="/" className="text-blue-500 t block">

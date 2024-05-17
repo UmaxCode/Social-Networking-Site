@@ -104,7 +104,11 @@ const Signin = () => {
           >
             Forgot password?
           </Link>
-          <ActionButton text="Login" reqSent={processReq} />
+          <ActionButton
+            text="Login"
+            reqSent={processReq}
+            styles="bg-telegram-light text-white py-2 px-4 rounded-md hover:bg-telegram-default focus:bg-telegram-default"
+          />
         </form>
         <p className="flex gap-2 justify-center my-3">
           Don't have an account?

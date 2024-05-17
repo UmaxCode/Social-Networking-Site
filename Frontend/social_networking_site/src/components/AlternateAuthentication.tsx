@@ -35,6 +35,9 @@ const AlternateAuthentication = () => {
       returnCode();
     },
     flow: "auth-code",
+    onError: () => {
+      toast.error("Sorry an error occurred");
+    },
   });
 
   return (
