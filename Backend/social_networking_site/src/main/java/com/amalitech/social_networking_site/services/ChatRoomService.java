@@ -34,14 +34,12 @@ public class ChatRoomService {
         ChatRoom senderReceiver = ChatRoom.builder()
                 .chatId(chatId)
                 .senderEmail(senderEmail)
-                .online(false)
                 .receiverEmail(receiverEmail)
                 .build();
 
         ChatRoom receiverSender = ChatRoom.builder()
                 .chatId(chatId)
                 .senderEmail(receiverEmail)
-                .online(false)
                 .receiverEmail(senderEmail)
                 .build();
 
@@ -52,19 +50,19 @@ public class ChatRoomService {
     }
 
 
-    public List<ChatRoom> setChatRoomState(OnlineUser onlineUser, boolean value) {
-
-        List<ChatRoom> chatRooms = chatRoomRepository.findBySenderEmail(onlineUser.email());
-
-        if(chatRooms.isEmpty()){
-            return null;
-        }
-
-        chatRooms.forEach((chatRoom)-> chatRoom.setOnline(value));
-
-       return chatRoomRepository.saveAll(chatRooms);
-
-    }
+//    public List<ChatRoom> setChatRoomState(OnlineUser onlineUser, boolean value) {
+//
+//        List<ChatRoom> chatRooms = chatRoomRepository.findBySenderEmail(onlineUser.email());
+//
+//        if(chatRooms.isEmpty()){
+//            return null;
+//        }
+//
+//        chatRooms.forEach((chatRoom)-> chatRoom.setOnline(value));
+//
+//       return chatRoomRepository.saveAll(chatRooms);
+//
+//    }
 
     public List<ChatRoom> findChatRoomByReceiver(String receiverEmail){
 

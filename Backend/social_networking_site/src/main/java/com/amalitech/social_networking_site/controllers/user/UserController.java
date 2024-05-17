@@ -9,8 +9,8 @@ import com.amalitech.social_networking_site.dto.response.*;
 import com.amalitech.social_networking_site.entities.Contact;
 import com.amalitech.social_networking_site.entities.User;
 import com.amalitech.social_networking_site.services.UserService;
+import com.amalitech.social_networking_site.utilities.Utilities;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -32,11 +32,9 @@ public class UserController {
 
             String filePath = user.getProfile().getFilePath();
 
-            //TODO: work on file preview
+            List<ContactSummaryDTO> contacts = user.getContacts().stream().map((contact -> new ContactSummaryDTO(contact.getFullname(), contact.getEmail(), contact.getContactState().name()))).toList();
 
-            List<ContactDTO> contacts = user.getContacts().stream().map((contact -> new ContactDTO(contact.getFullname(), contact.getEmail(), contact.getContactState().name()))).toList();
-
-            return ResponseEntity.ok(new UserDetailsData(new UserInfo(user.getFullName(), user.getUsername(), user.getEmail(), user.getRole().name(), filePath), contacts));
+            return ResponseEntity.ok(new UserDetailsData(new UserSummaryInfoDTO(user.getFullName(), user.getUsername(), user.getEmail(), user.getRole().name(), filePath), contacts));
         } catch (Exception err) {
 
             return ResponseEntity.status(400).body(new ErrorMessage(err.getMessage()));
@@ -50,14 +48,13 @@ public class UserController {
         try {
             List<Contact> userContacts = userService.getUserDetails(authentication).getContacts();
 
-            var users = userContacts.stream().map((contact -> userService.getUserFromEmail(contact.getEmail()))).toList();
+            List<ContactResponseDTO> contacts =  userContacts.stream().map(contact -> new ContactResponseDTO(userService.getUserFromEmail(contact.getEmail()), contact.getContactState() == Utilities.ContactState.BLACKLIST)).toList();
 
-
-            return ResponseEntity.ok(users);
+            var response = contacts.stream().map( contactResponseDTO -> new UserContactInfoDTO(contactResponseDTO.user().getFullName(), contactResponseDTO.user().getEmail(), contactResponseDTO.user().getProfile().getOnlineStatus(), contactResponseDTO.user().getProfile().getFilePath(), contactResponseDTO.contactStatus()));
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(400).body(new ErrorMessage("Error occurred will loading users contacts"));
         }
-
     }
 
 
@@ -141,7 +138,8 @@ public class UserController {
 
             List<String> availableUsers = userService.getAllPlatformUsers().stream().map((User::getEmail)).filter((user)-> !userContacts.contains(user) && !user.equals(email)).toList();
 
-            return ResponseEntity.ok(new Invitations(availableUsers, invites));
+
+            return ResponseEntity.ok(new InvitationsDTO(availableUsers, invites));
         }catch (Exception e){
             return ResponseEntity.status(400).body(new ErrorMessage(e.getMessage()));
         }

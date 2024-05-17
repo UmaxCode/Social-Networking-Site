@@ -1,8 +1,11 @@
 package com.amalitech.social_networking_site.services;
 
+import com.amalitech.social_networking_site.dto.requests.chat.OnlineUser;
 import com.amalitech.social_networking_site.dto.requests.user.ContactStatusDTO;
 import com.amalitech.social_networking_site.dto.requests.user.PasswordChangeRequest;
 import com.amalitech.social_networking_site.dto.response.InviteDTO;
+import com.amalitech.social_networking_site.dto.response.OnlineStatusUpdateDTO;
+import com.amalitech.social_networking_site.dto.response.UserContactInfoDTO;
 import com.amalitech.social_networking_site.entities.Contact;
 import com.amalitech.social_networking_site.entities.Invite;
 import com.amalitech.social_networking_site.entities.User;
@@ -19,7 +22,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
@@ -43,8 +45,7 @@ public class UserService {
 
         var principal = (UserDetails) authentication.getPrincipal();
 
-        Optional<User> user = userRepository.findByEmail(principal.getUsername());
-        return user.orElseThrow(() -> new IllegalArgumentException("DFDF"));
+        return getUserFromEmail(principal.getUsername());
 
     }
 
@@ -124,6 +125,7 @@ public class UserService {
 
         }
 
+
         Optional<Contact> optionalContact = contactRepository.findByOwnerAndEmail(sender, receiver.getEmail());
 
         if (optionalContact.isPresent()) {
@@ -138,6 +140,18 @@ public class UserService {
                 .build();
 
         inviteRepository.save(userInvite);
+    }
+
+        public OnlineStatusUpdateDTO setUserOnlineStatus(OnlineUser onlineUser, boolean value) {
+
+            User user = getUserFromEmail(onlineUser.email());
+
+            user.getProfile().setOnlineStatus(value);
+
+            userRepository.save(user);
+
+            return new OnlineStatusUpdateDTO(user.getFullName(), user.getEmail(), user.getProfile().getOnlineStatus(), user.getProfile().getFilePath());
+
     }
 
     public String acceptUserInvite(String senderEmail, String receiverEmail) {
@@ -158,6 +172,9 @@ public class UserService {
 
         var invite = optionalInvite.get();
 
+        User receiver = getUserFromEmail(invite.getReceiver());
+
+
         Contact senderContact = Contact.builder()
                 .fullname(getUserFromEmail(invite.getReceiver()).getFullName())
                 .email(invite.getReceiver())
@@ -173,6 +190,7 @@ public class UserService {
                         invite.getReceiver()
                 ))
                 .build();
+
 
 
         chatRoomService.createChatId(senderContact.getOwner().getEmail(), receiverContact.getOwner().getEmail());
@@ -215,7 +233,8 @@ public class UserService {
     public String setUserContactStatus(ContactStatusDTO contactStatusDTO, User owner) {
 
 
-        Optional<Contact> optionalContact = contactRepository.findByOwnerAndEmail(owner, contactStatusDTO.contact());
+        User userContact = getUserFromEmail(contactStatusDTO.contact());
+        Optional<Contact> optionalContact = contactRepository.findByOwnerAndEmail(owner, userContact.getEmail());
 
         if (optionalContact.isEmpty()) {
             throw new IllegalArgumentException("Contact does not exist");

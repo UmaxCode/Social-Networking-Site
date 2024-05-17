@@ -25,7 +25,4 @@ public class ChatRoom {
 
     private String receiverEmail;
 
-    private Boolean online;
-
-
 }

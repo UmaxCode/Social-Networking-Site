@@ -23,6 +23,8 @@ public class UserProfile {
 
     private String filePath;
 
+    private Boolean onlineStatus;
+
     @OneToOne
     @JsonBackReference
     @JoinColumn(name = "user_id")
