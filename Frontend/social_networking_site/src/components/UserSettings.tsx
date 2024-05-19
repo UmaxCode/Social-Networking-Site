@@ -4,10 +4,10 @@ import PasswordInput from "./PasswordInput";
 import { useFormBinding } from "../hooks/useFormBinding";
 import toast from "react-hot-toast";
 import avataImage from "../assets/avatar.jpg";
-import useCrudOperation from "../hooks/useCrudOperation";
 import { AuthData } from "../contexts/AuthWrapper";
 import { Link, useNavigate } from "react-router-dom";
 import ActionButton from "./ActionButton";
+import backendEndpoints from "./endpoints";
 
 const userData = {
   oldpassword: "",
@@ -51,6 +51,7 @@ const UserSettings = () => {
   const [processReq, setProcessReq] = useState({
     password: false,
     profile: false,
+    contactState: false,
   });
 
   const [userDetails, setUserDetails] = useState<UserDetailsType>();
@@ -79,16 +80,38 @@ const UserSettings = () => {
       navigate("/");
       return;
     }
-    useCrudOperation({
+    const options = {
       method: "Get",
-      url: "http://localhost:3001/user/details",
-      token: authenticate.token,
-    })
-      .then((data) => setUserDetails({ ...data }))
-      .catch((error) => toast.error(error.message));
+      headers: {
+        Authorization: `Bearer ${authenticate.token}`,
+        "Content-Type": "application/json",
+      },
+    };
+
+    const loadUserDetails = async () => {
+      try {
+        const response = await fetch(
+          backendEndpoints.load_UserDetails,
+          options
+        );
+
+        if (!response.ok) {
+          const errorMessage = await response.json();
+          throw new Error(errorMessage.error);
+        }
+
+        const data = await response.json();
+        setUserDetails({ ...data });
+      } catch (err) {
+        const error = err as Error;
+        toast.error(error.message);
+      }
+    };
+
+    loadUserDetails();
   }, [userDetailsUpdate.infoToggler, userDetailsUpdate.contactToggler]);
 
-  const updateFile = (event: FormEvent) => {
+  const updateProfilePic = (event: FormEvent) => {
     event.preventDefault();
     setProcessReq({ ...processReq, profile: true });
     formData.append(
@@ -96,29 +119,42 @@ const UserSettings = () => {
       fileSeletion.file,
       `${userDetails?.info.username}.png`
     );
-    fetch("http://localhost:3001/user/profile_pic_update", {
+
+    const options = {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${authenticate.token}`,
       },
       body: formData,
-    })
-      .then((res) => res.json())
-      .then((data) => {
+    };
+
+    const update = async () => {
+      try {
+        const response = await fetch(backendEndpoints.update_profile, options);
+
+        if (!response.ok) {
+          const errorMessage = await response.json();
+          throw new Error(errorMessage.error);
+        }
+
+        const data = await response.json();
         setProfilePic(data.url);
         toast.success(data.message);
-      })
-      .catch((error) => console.log(error))
-      .finally(() => {
+      } catch (err) {
+        const error = err as Error;
+        toast.error(error.message);
+      } finally {
         setUserDetailsUpdated({
           ...userDetailsUpdate,
           ["infoToggler"]: !userDetailsUpdate.infoToggler,
         });
 
         setProcessReq({ ...processReq, profile: false });
-
         closeModal();
-      });
+      }
+    };
+
+    update();
   };
 
   const changePassword = (event: FormEvent) => {
@@ -128,28 +164,47 @@ const UserSettings = () => {
 
     if (validationState) {
       setProcessReq({ ...processReq, password: true });
-      useCrudOperation({
+
+      const options = {
         method: "Put",
-        url: "http://localhost:3001/user/change_password",
-        data: {
+        headers: {
+          Authorization: `Bearer ${authenticate.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           oldPassword: formInput.oldpassword,
           newPassword: formInput.password,
-        },
-        token: authenticate.token,
-      })
-        .then((data) => {
+        }),
+      };
+
+      const change = async () => {
+        try {
+          const response = await fetch(
+            backendEndpoints.change_password,
+            options
+          );
+
+          if (!response.ok) {
+            const errorMessage = await response.json();
+            throw new Error(errorMessage.error);
+          }
+
+          const data = await response.json();
           toast.success(data.message);
           setFormInput(userData);
-        })
-        .catch((error) => {
+        } catch (err) {
+          const error = err as Error;
           toast.error(error.message);
-        })
-        .finally(() => setProcessReq({ ...processReq, password: false }));
+        } finally {
+          setProcessReq({ ...processReq, password: false });
+        }
+      };
+
+      change();
     }
   };
 
   const openModal = (event: any) => {
-    console.log("Open file");
     const file = event.target.files[0];
     if (file.type === "image/png" || file.type === "image/jpeg") {
       setImage(URL.createObjectURL(file));
@@ -161,7 +216,6 @@ const UserSettings = () => {
     } else {
       alert("Sorry and image is required");
     }
-    console.log(file);
   };
 
   const closeModal = () => {
@@ -172,24 +226,19 @@ const UserSettings = () => {
     });
   };
 
-  const setContactState = (email: string, state: string) => {
-    console.log(state);
+  const changeContactState = (email: string, state: string) => {
+    setProcessReq({ ...processReq, contactState: true });
 
     async function setState() {
       try {
-        const response = await fetch(
-          "http://localhost:3001/user/blacklist-whitelist",
-          {
-            method: "Put",
-            headers: {
-              Authorization: `Bearer ${authenticate.token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ contact: email, status: state }),
-          }
-        );
-
-        console.log(response);
+        const response = await fetch(backendEndpoints.change_contactStatus, {
+          method: "Put",
+          headers: {
+            Authorization: `Bearer ${authenticate.token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ contact: email, status: state }),
+        });
 
         if (!response.ok) {
           const errorMessage = await response.json();
@@ -198,6 +247,7 @@ const UserSettings = () => {
 
         const data = await response.json();
         toast.success(data.message);
+        setProcessReq({ ...processReq, contactState: false });
       } catch (error) {
         const err = error as Error;
         toast.error(err.message);
@@ -211,7 +261,6 @@ const UserSettings = () => {
 
     setState();
   };
-  console.log(userDetails?.info.pic);
   return (
     <>
       <div className="max-w-[900px] mx-auto p-3">
@@ -379,20 +428,27 @@ const UserSettings = () => {
                   </span>
                 </div>
                 <div className="col-span-1 flex items-center">
-                  <button
-                    onClick={() =>
-                      setContactState(contact.email, contact.state)
-                    }
-                    className={`w-[100%] rounded h-[100%] text-white ${
-                      contact.state === "WHITELIST"
-                        ? "bg-red-300 hover:bg-red-400"
-                        : "bg-green-300 hover:bg-green-400"
-                    }`}
+                  <form
+                    action=""
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      changeContactState(contact.email, contact.state);
+                    }}
                   >
-                    {contact.state === "WHITELIST"
-                      ? "Blacklist user"
-                      : "Make user active"}
-                  </button>
+                    <ActionButton
+                      text={
+                        contact.state === "WHITELIST"
+                          ? "Blacklist user"
+                          : "Make user active"
+                      }
+                      reqSent={processReq.contactState}
+                      styles={`w-[100%] rounded h-[100%] text-white block p-2 ${
+                        contact.state === "WHITELIST"
+                          ? "bg-red-300 hover:bg-red-400"
+                          : "bg-green-300 hover:bg-green-400"
+                      }`}
+                    />
+                  </form>
                 </div>
               </div>
             );
@@ -446,16 +502,7 @@ const UserSettings = () => {
                     >
                       cancel
                     </button>
-                    {/* <button
-                      className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                      onClick={() => {
-                        updateFile();
-                        closeModal();
-                      }}
-                    >
-                      Save
-                    </button> */}
-                    <form action="" onSubmit={updateFile}>
+                    <form action="" onSubmit={updateProfilePic}>
                       <ActionButton
                         text="save"
                         reqSent={processReq.profile}

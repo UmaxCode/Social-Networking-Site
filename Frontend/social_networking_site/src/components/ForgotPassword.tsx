@@ -3,6 +3,7 @@ import { useFormBinding } from "../hooks/useFormBinding";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import ActionButton from "./ActionButton";
+import backendEndpoints from "./endpoints";
 
 const userData = {
   email: "",
@@ -30,22 +31,31 @@ const ForgotPassword = () => {
         },
         body: JSON.stringify(data),
       };
-      fetch("http://localhost:3001/auth/password_reset", options)
-        .then((res) => {
-          return res.json();
-        })
-        .then((data) => {
-          if (data.message) {
-            console.log(data);
-            toast.success(data.message);
-            setFormInput(userData);
-          } else {
-            toast.error(data.error);
-          }
-        })
 
-        .catch((err) => console.log(err))
-        .finally(() => setProcessReq(false));
+      const passwordReset = async () => {
+        try {
+          const response = await fetch(
+            backendEndpoints.forgot_password,
+            options
+          );
+
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error);
+          }
+
+          const data = await response.json();
+          setFormInput(userData);
+          toast.success(data.message);
+        } catch (err) {
+          const error = err as Error;
+          toast.error(error.message);
+        } finally {
+          setProcessReq(false);
+        }
+      };
+
+      passwordReset();
     }
   };
 

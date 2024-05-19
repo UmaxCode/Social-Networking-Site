@@ -2,15 +2,17 @@ import { Fragment, useState, useRef, useEffect } from "react";
 import ChatInput from "./ChatInput";
 import {
   Link,
-  useOutletContext,
   useNavigate,
   useParams,
+  useSearchParams,
 } from "react-router-dom";
 import avataImage from "../assets/avatar.jpg";
 import { Dialog, Transition } from "@headlessui/react";
-import { UserContact } from "../containers/ChatContainer";
 import { AuthData } from "../contexts/AuthWrapper";
-import { Client } from "stompjs";
+import toast from "react-hot-toast";
+import { WebSocketContextData } from "../containers/WebSocketConnection";
+import ActionButton from "./ActionButton";
+import backendEndpoints from "./endpoints";
 
 type File = {
   fileSeleted: boolean;
@@ -24,12 +26,16 @@ type Message = {
 };
 
 const MessageSection = () => {
-  const [newMessage, userContacts, connection, loggedInUser] =
-    useOutletContext<[Message, UserContact[], Client, string]>();
+  const { connection, userContacts, loggedInUser, newMessage } =
+    WebSocketContextData();
+
+  const [sendFileReq, setSendFileReq] = useState(false);
 
   const params = useParams();
 
-  const selectedContact = userContacts.filter(
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const selectedContact = userContacts?.filter(
     (contact) => contact.email === params.chatId
   )[0];
 
@@ -49,18 +55,17 @@ const MessageSection = () => {
   });
 
   useEffect(() => {
-    if (newMessage !== undefined) {
-      if (newMessage.senderEmail === selectedContact.email) {
+    if (newMessage !== undefined || newMessage !== null) {
+      if (newMessage?.senderEmail === selectedContact?.email) {
         setChatMessages([...chatMessages, newMessage]);
-
-        scrollToBottom();
       }
     }
+    scrollToBottom();
   }, [newMessage]);
 
   async function loadUserMessages() {
     if (selectedContact) {
-      const url = `http://localhost:3001/messages/${loggedInUser}/${selectedContact.email}`;
+      const url = `${backendEndpoints.load_messages}${loggedInUser}/${selectedContact?.email}`;
 
       try {
         const response = await fetch(url, {
@@ -71,14 +76,18 @@ const MessageSection = () => {
         });
 
         if (!response.ok) {
-          throw new Error();
+          const errorMessage = await response.json();
+          throw new Error(errorMessage.error);
         }
 
         const data = await response.json();
 
         setChatMessages([...data]);
-      } catch (error) {
-        console.log(error);
+      } catch (err) {
+        const error = err as Error;
+        toast.error(error.message);
+      } finally {
+        scrollToBottom();
       }
     }
   }
@@ -92,27 +101,41 @@ const MessageSection = () => {
   }, [selectedContact]);
 
   function sendMessage(data: string) {
-    if (data?.trim() && connection) {
+    const blackListed = searchParams.get("blackListed");
+
+    if (data?.trim().length === 0) {
+      toast.error("You need to provide a message");
+    } else if (data?.trim() && blackListed === "true") {
+      toast.error("Sorry, you can't send a message to a blacklisted user");
+    } else if (data?.trim() && connection) {
       const chatMessage = {
         senderEmail: loggedInUser,
         receiverEmail: selectedContact.email,
         content: data.trim(),
       };
 
-      connection.send("/app/chat", {}, JSON.stringify(chatMessage));
+      if (connection.connected) {
+        connection.send("/app/chat", {}, JSON.stringify(chatMessage));
+      }
 
       const newMessage: Message = {
         receiverEmail: chatMessage.receiverEmail,
-        senderEmail: loggedInUser,
+        senderEmail: loggedInUser as string,
         content: data.trim(),
       };
       setChatMessages([...chatMessages, newMessage]);
-      scrollToBottom();
     }
+
+    scrollToBottom();
   }
 
   function sendFile(file: Blob) {
-    return null;
+    setSendFileReq(true);
+    setTimeout(() => {
+      console.log(file);
+      closeModal();
+      setSendFileReq(false);
+    }, 3000);
   }
 
   const openModal = (event: any) => {
@@ -176,31 +199,29 @@ const MessageSection = () => {
           className="flex-1 sm:bg-white bg-gray-100 rounded shadow-sm p-2 overflow-y-auto"
           ref={chatBoxRef}
         >
-          <div className="">
-            {chatMessages?.map((message, index) => {
-              return (
-                <div key={index} className="">
-                  <div
+          {chatMessages?.map((message, index) => {
+            return (
+              <div key={index} className="">
+                <div
+                  className={`${
+                    loggedInUser === message?.senderEmail
+                      ? "text-right"
+                      : "text-left"
+                  }  mb-2`}
+                >
+                  <span
                     className={`${
-                      loggedInUser === message.senderEmail
-                        ? "text-right"
-                        : "text-left"
-                    }  mb-2`}
+                      loggedInUser === message?.senderEmail
+                        ? "bg-telegram-light text-white rounded-bl-lg"
+                        : "sm:bg-gray-100 bg-white  text-telegram rounded-br-lg"
+                    }  mb-2 inline-block p-2 rounded-t-lg `}
                   >
-                    <span
-                      className={`${
-                        loggedInUser === message.senderEmail
-                          ? "bg-telegram-light text-white rounded-bl-lg"
-                          : "sm:bg-gray-100 bg-white  text-telegram rounded-br-lg"
-                      }  mb-2 inline-block p-2 rounded-t-lg `}
-                    >
-                      {message.content}
-                    </span>
-                  </div>
+                    {message?.content}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
         <div className="">
           <div className="flex items-center">
@@ -285,13 +306,19 @@ const MessageSection = () => {
                     >
                       cancel
                     </button>
-                    <button
-                      type="button"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                      onClick={() => closeModal()}
+                    <form
+                      action=""
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        sendFile(fileSeletion.file);
+                      }}
                     >
-                      Send
-                    </button>
+                      <ActionButton
+                        text="save"
+                        reqSent={sendFileReq}
+                        styles="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                      />
+                    </form>
                   </div>
                 </Dialog.Panel>
               </Transition.Child>

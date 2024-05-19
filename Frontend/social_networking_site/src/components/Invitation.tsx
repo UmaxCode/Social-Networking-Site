@@ -6,6 +6,7 @@ import ActionButton from "./ActionButton";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Toggle from "./Toggle";
+import backendEndpoints from "./endpoints";
 
 type PlatformUsers = {
   nonInviteUsers: [];
@@ -55,27 +56,19 @@ const Invitation = () => {
     return classes.filter(Boolean).join(" ");
   }
 
-  console.log(enabled);
-
   useEffect(() => {
     if (!authenticate.isAuthenticated) {
       navigate("/");
       return;
     }
-    console.log("Updating..............");
     async function loadUserInvitations() {
       try {
-        const response = await fetch(
-          "http://localhost:3001/user/list/invitation",
-          {
-            method: "Get",
-            headers: {
-              Authorization: `Bearer ${authenticate.token}`,
-            },
-          }
-        );
-
-        console.log(response);
+        const response = await fetch(backendEndpoints.invite_listing, {
+          method: "Get",
+          headers: {
+            Authorization: `Bearer ${authenticate.token}`,
+          },
+        });
 
         if (!response.ok) {
           const errorMessage = await response.json();
@@ -83,12 +76,10 @@ const Invitation = () => {
         }
 
         const data = await response.json();
-
-        console.log(data);
-
         setPlatFormUsers(data);
-      } catch (error) {
-        console.log(error);
+      } catch (err) {
+        const error = err as Error;
+        toast.error(error.message);
       }
     }
 
@@ -103,7 +94,7 @@ const Invitation = () => {
     setProcessReq({ ...processReq, ["send"]: true });
     async function send() {
       try {
-        const response = await fetch("http://localhost:3001/user/send_invite", {
+        const response = await fetch(backendEndpoints.send_invite, {
           method: "Post",
           headers: {
             Authorization: `Bearer ${authenticate.token}`,
@@ -112,8 +103,6 @@ const Invitation = () => {
           body: JSON.stringify({ email: email }),
         });
 
-        console.log(response);
-
         if (!response.ok) {
           const errorMessage = await response.json();
           throw new Error(errorMessage.error);
@@ -121,16 +110,13 @@ const Invitation = () => {
 
         const data = await response.json();
 
-        console.log(data);
-
         setProcessReq({ ...processReq, ["send"]: false });
-        toast.success(data.message);
         setInviteUpdated({ ...inviteUpdated, ["sent"]: true });
-      } catch (error) {
-        const err = error as Error;
-        toast.error(err.message);
-        console.log(error);
+        toast.success(data.message);
+      } catch (err) {
+        const error = err as Error;
         setProcessReq({ ...processReq, ["send"]: false });
+        toast.error(error.message);
       } finally {
         setInviteUpdated({ ...inviteUpdated, ["sent"]: true });
       }
@@ -148,8 +134,8 @@ const Invitation = () => {
     setProcessReq({ ...processReq, ["accept"]: true });
 
     const url = enabled
-      ? "http://localhost:3001/user/accept_invite"
-      : "http://localhost:3001/user/decline_invite";
+      ? backendEndpoints.accept_invite
+      : backendEndpoints.decline_invite;
 
     const method = enabled ? "Post" : "Delete";
 
@@ -171,13 +157,11 @@ const Invitation = () => {
 
         const data = await response.json();
         setProcessReq({ ...processReq, ["send"]: false });
-
         toast.success(data.message);
-      } catch (error) {
-        const err = error as Error;
+      } catch (err) {
+        const error = err as Error;
         setProcessReq({ ...processReq, ["send"]: false });
-        toast.error(err.message);
-        console.log(error);
+        toast.error(error.message);
       } finally {
         setInviteUpdated({ ...inviteUpdated, ["accepted"]: true });
       }

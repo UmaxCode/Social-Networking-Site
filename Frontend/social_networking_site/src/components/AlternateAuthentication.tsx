@@ -2,6 +2,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { AuthData } from "../contexts/AuthWrapper";
+import backendEndpoints from "./endpoints";
 
 const AlternateAuthentication = () => {
   const navigate = useNavigate();
@@ -10,27 +11,27 @@ const AlternateAuthentication = () => {
 
   const loginGoogleOauth = useGoogleLogin({
     onSuccess: (authResponse) => {
-      async function returnCode() {
-        console.log(authResponse);
+      const returnCode = async () => {
         try {
-          const response = await fetch(
-            `http://localhost:3001/auth/oauth_google_callback?code=${authResponse.code}`
-          );
-          console.log(response);
+          const url = backendEndpoints.google_oauth + authResponse.code;
+
+          const response = await fetch(url);
+
           if (!response.ok) {
-            throw new Error("DFDFDFDF");
+            const data = await response.json();
+            throw new Error(data.error);
           }
+
           const data = await response.json();
-          console.log(data);
           login(data.token);
           setProfilePic(data.profile_pic);
-
-          toast.success(`${data.message}`);
-          setTimeout(() => navigate(`/${data.username}/chats`), 3000);
-        } catch (error) {
-          console.log(error);
+          toast.success(data.message);
+          setTimeout(() => navigate(`${data.username}/chats`), 3000);
+        } catch (err) {
+          const error = err as Error;
+          toast.error(error.message);
         }
-      }
+      };
 
       returnCode();
     },

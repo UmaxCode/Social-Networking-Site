@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import Modal from "./Modal";
 import toast from "react-hot-toast";
 import ActionButton from "./ActionButton";
+import backendEndpoints from "./endpoints";
 
 const userData = {
   fullname: "",
@@ -40,22 +41,27 @@ const Signup = () => {
         },
         body: JSON.stringify(data),
       };
-      fetch("http://localhost:3001/auth/register", options)
-        .then((res) => {
-          return res.json();
-        })
-        .then((data) => {
-          if (data.message) {
-            setShowModal(true);
-            setModalMessage(data.message);
-            console.log(data);
-          } else {
-            toast.error(data.error);
-            console.log(data.error);
+      const register = async () => {
+        try {
+          const response = await fetch(backendEndpoints.register, options);
+
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error);
           }
-        })
-        .catch((err) => console.log(err))
-        .finally(() => setProcessReq(false));
+
+          const data = await response.json();
+          setShowModal(true);
+          setModalMessage(data.message);
+        } catch (err) {
+          const error = err as Error;
+          toast.error(error.message);
+        } finally {
+          setProcessReq(false);
+        }
+      };
+
+      register();
     }
   }
 

@@ -2,11 +2,12 @@ import { useFormBinding } from "../hooks/useFormBinding";
 import AlternateAuthentication from "./AlternateAuthentication";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PasswordInput from "./PasswordInput";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 
 import { AuthData } from "../contexts/AuthWrapper";
 import ActionButton from "./ActionButton";
+import backendEndpoints from "./endpoints";
 
 const userData = {
   email: "",
@@ -43,23 +44,30 @@ const Signin = () => {
         },
         body: JSON.stringify(data),
       };
-      fetch("http://localhost:3001/auth/authenticate", options)
-        .then((res) => {
-          return res.json();
-        })
-        .then((data) => {
-          if (data.token) {
-            login(data.token);
-            setFormInput(userData);
-            toast.success(`${data.message}`);
-            setTimeout(() => navigate(`${data.username}/chats`), 3000);
-          } else {
-            console.log(data.error);
-            toast.error(data.error);
+
+      const authenticate = async () => {
+        try {
+          const response = await fetch(backendEndpoints.login, options);
+
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error);
           }
-        })
-        .catch((err) => console.log(err))
-        .finally(() => setProcessReq(false));
+
+          const data = await response.json();
+          login(data.token);
+          setFormInput(userData);
+          toast.success(data.message);
+          setTimeout(() => navigate(`${data.username}/chats`), 3000);
+        } catch (err) {
+          const error = err as Error;
+          toast.error(error.message);
+        } finally {
+          setProcessReq(false);
+        }
+      };
+
+      authenticate();
     }
   }
 

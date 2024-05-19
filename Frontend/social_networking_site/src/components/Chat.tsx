@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+import { useEffect } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 
 type ChatProp = {
   image: string;
@@ -9,9 +10,13 @@ type ChatProp = {
 };
 
 const Chat = ({ online, image, full_name, email, blackListed }: ChatProp) => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    navigate(`./${email}?blackListed=${blackListed}`);
+  }, [blackListed]);
   return (
     <NavLink
-      to={`${email}`}
+      to={`${email}?blackListed=${blackListed}`}
       className={({ isActive }) => {
         return (
           "flex border-b-[0.1em] px-5 py-2 hover:bg-gray-100 cursor-pointer items-center " +

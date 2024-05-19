@@ -55,7 +55,6 @@ export const useFormBinding = (initialFormInput: any): any => {
       data.password != undefined &&
       data.oldpassword != undefined &&
       !passwordRegex.test(data.password) &&
-      data.oldpassword &&
       !passwordRegex.test(data.oldpassword)
     ) {
       formValidation.password =

@@ -12,12 +12,13 @@ import ForgotPassword from "./components/ForgotPassword";
 import MessageSection from "./components/MessageSection";
 import UserSettings from "./components/UserSettings";
 import Invitation from "./components/Invitation";
+import WebSocketConnection from "./containers/WebSocketConnection";
 
 function App() {
   const router = createBrowserRouter(
     createRoutesFromChildren(
       <Route>
-        <Route path="/:user">
+        <Route path="/:user" element={<WebSocketConnection />}>
           <Route path="chats" element={<ChatContainer />}>
             <Route path=":chatId" element={<MessageSection />} />
           </Route>

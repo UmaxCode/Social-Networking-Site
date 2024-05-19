@@ -1,21 +1,12 @@
 import Chat from "../components/Chat";
 import ChatInput from "../components/ChatInput";
 import { Link, Outlet, useParams, useNavigate } from "react-router-dom";
-import { Fragment, useEffect, useState, useRef } from "react";
+import { Fragment, useEffect, useState } from "react";
 import avataImage from "../assets/avatar.jpg";
 import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { AuthData } from "../contexts/AuthWrapper";
-import { Client, over } from "stompjs";
-import { jwtDecode } from "jwt-decode";
-
-type TokenData = {
-  email: string;
-  exp: number;
-  iat: number;
-  role: string;
-  sub: string;
-};
+import { WebSocketContextData } from "./WebSocketConnection";
 
 export type UserContact = {
   fullname: string;
@@ -32,105 +23,18 @@ export type Message = {
 };
 
 const ChatContainer = () => {
-  const navigate = useNavigate();
+  const { userContacts, loadUserContacts } = WebSocketContextData();
 
-  const connection = useRef<Client>();
+  const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
 
-  const [userContacts, setUserContacts] = useState<UserContact[]>([]);
-
-  const [loggedInUser, setLoggedInUser] = useState<string>();
-
-  const [newMessage, setNewMessage] = useState<Message>();
-
   const params = useParams();
 
-  const { logout, authenticate, profile } = AuthData();
-
-  function onConnected() {
-    loadUserContacts();
-
-    const decodedJWT: TokenData = jwtDecode(authenticate.token as string);
-
-    const loggedInUser = decodedJWT.email;
-
-    setLoggedInUser(loggedInUser);
-
-    connection.current?.subscribe(
-      `/user/${loggedInUser}/queue/messages`,
-      (payload) => {
-        const data = JSON.parse(payload.body);
-
-        const receiverEmail = data.chatId
-          .split("_")
-          .filter((email: string) => email != data.senderEmail)[0];
-
-        setNewMessage({
-          ...newMessage,
-          receiverEmail: receiverEmail,
-          senderEmail: data.senderEmail,
-          content: data.content,
-        });
-      }
-    );
-
-    connection.current?.subscribe(`/user/public`, loadUserContacts);
-
-    connection.current?.send(
-      "/app/user.online",
-      {},
-      JSON.stringify({ email: decodedJWT.email })
-    );
-  }
-
-  function onError() {
-    console.log("Error occurred while connecting to websocket");
-  }
-
-  async function loadUserContacts() {
-    try {
-      const response = await fetch(
-        "http://localhost:3001/user/contacts",
-
-        {
-          method: "Get",
-          headers: {
-            Authorization: `Bearer ${authenticate.token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error();
-      }
-
-      const data: UserContact[] = await response.json();
-      console.log(data);
-
-      setUserContacts([...data]);
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  const { logout, profile } = AuthData();
 
   useEffect(() => {
-    if (!authenticate.isAuthenticated) {
-      navigate("/");
-    }
-
-    const socket = new WebSocket("ws://localhost:3001/ws");
-
-    const stompClient = over(socket);
-
-    connection.current = stompClient;
-
-    stompClient.connect({}, onConnected, onError);
-
-    return () =>
-      connection.current?.disconnect(() => {
-        console.log("Disconnected from WebSocket server");
-      });
+    loadUserContacts();
   }, []);
 
   return (
@@ -147,9 +51,7 @@ const ChatContainer = () => {
 
                   <div className="me-3 h-[30px] w-[30px]">
                     <img
-                      src={
-                        profile === "null" ? avataImage : (profile as string)
-                      }
+                      src={profile === null ? avataImage : (profile as string)}
                       alt=""
                       className="h-[100%] w-[100%] rounded-full"
                     />
@@ -164,7 +66,7 @@ const ChatContainer = () => {
               </div>
               <div className="p-2 flex-1  bg-white overflow-y-scroll shadow-sm rounded">
                 <div className="bg-white flex flex-col gap-2">
-                  {userContacts.length === 0 ? (
+                  {userContacts?.length === 0 ? (
                     <>
                       <span className="text-center">
                         You have no friend(s) to chat with, check your blacklist
@@ -173,7 +75,7 @@ const ChatContainer = () => {
                       </span>
                     </>
                   ) : (
-                    userContacts.map((contact, index) => {
+                    userContacts?.map((contact, index) => {
                       return (
                         <Chat
                           key={index}
@@ -200,14 +102,7 @@ const ChatContainer = () => {
             >
               Select a chat to start messaging
             </div>
-            <Outlet
-              context={[
-                newMessage,
-                userContacts,
-                connection.current,
-                loggedInUser,
-              ]}
-            />
+            <Outlet />
           </div>
         </div>
       </div>
