@@ -244,6 +244,7 @@ const MessageSection = () => {
 
             <div className="flex-1">
               <ChatInput
+                clearInput={true}
                 icon="bi bi-send-fill px-2 bg-telegram-default text-white rounded"
                 action={sendMessage}
                 name="chat_message"

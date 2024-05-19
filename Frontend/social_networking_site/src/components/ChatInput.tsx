@@ -1,13 +1,20 @@
 import { ChangeEvent, useRef, useState } from "react";
 
 type ChatInputProp = {
+  clearInput: boolean;
   icon: string;
   name: string;
   placeholder: string;
   action: (data: string) => void;
 };
 
-const ChatInput = ({ icon, name, placeholder, action }: ChatInputProp) => {
+const ChatInput = ({
+  icon,
+  name,
+  placeholder,
+  action,
+  clearInput,
+}: ChatInputProp) => {
   const [data, setData] = useState<string>("");
 
   const inputElement = useRef<HTMLInputElement>(null);
@@ -33,7 +40,7 @@ const ChatInput = ({ icon, name, placeholder, action }: ChatInputProp) => {
             action(data);
             if (inputElement.current) {
               inputElement.current.value = " ";
-              setData("");
+              clearInput ? setData("") : null;
             }
           }}
           className={icon}

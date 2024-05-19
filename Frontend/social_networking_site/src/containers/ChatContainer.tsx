@@ -1,6 +1,12 @@
 import Chat from "../components/Chat";
 import ChatInput from "../components/ChatInput";
-import { Link, Outlet, useParams, useNavigate } from "react-router-dom";
+import {
+  Link,
+  Outlet,
+  useParams,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { Fragment, useEffect, useState } from "react";
 import avataImage from "../assets/avatar.jpg";
 import { Dialog, Transition } from "@headlessui/react";
@@ -22,6 +28,8 @@ export type Message = {
   content: string;
 };
 
+let filteredUserContacts;
+
 const ChatContainer = () => {
   const { userContacts, loadUserContacts } = WebSocketContextData();
 
@@ -31,8 +39,19 @@ const ChatContainer = () => {
 
   const params = useParams();
 
+  const [searchContact, setSearchContact] = useSearchParams();
+
   const { logout, profile } = AuthData();
 
+  const searchParams = searchContact?.get("search");
+
+  filteredUserContacts = userContacts.filter((contact) => {
+    if (searchParams === null) {
+      return contact;
+    } else {
+      return contact.email.includes(searchParams.toLocaleLowerCase());
+    }
+  });
   useEffect(() => {
     loadUserContacts();
   }, []);
@@ -58,10 +77,15 @@ const ChatContainer = () => {
                   </div>
                 </div>
                 <ChatInput
+                  clearInput={false}
                   icon="bi bi-search px-2"
-                  action={() => {}}
+                  action={(data) => {
+                    setSearchContact((prevParams) => {
+                      return { ...prevParams, search: data };
+                    });
+                  }}
                   name="search"
-                  placeholder="search"
+                  placeholder="search by email"
                 />
               </div>
               <div className="p-2 flex-1  bg-white overflow-y-scroll shadow-sm rounded">
@@ -69,13 +93,13 @@ const ChatContainer = () => {
                   {userContacts?.length === 0 ? (
                     <>
                       <span className="text-center">
-                        You have no friend(s) to chat with, check your blacklist
-                        or Send an Invite
+                        You have no friend(s) to chat with Send an Invite or
+                        accept if any
                         <i className="bi bi-send-plus-fill text-xl text-telegram-default"></i>
                       </span>
                     </>
                   ) : (
-                    userContacts?.map((contact, index) => {
+                    filteredUserContacts?.map((contact, index) => {
                       return (
                         <Chat
                           key={index}
@@ -90,6 +114,10 @@ const ChatContainer = () => {
                       );
                     })
                   )}
+
+                  {filteredUserContacts.length === 0 ? (
+                    <p className="text-center">No search results found</p>
+                  ) : null}
                 </div>
               </div>
             </div>

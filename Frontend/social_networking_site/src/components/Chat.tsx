@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useSearchParams } from "react-router-dom";
 
 type ChatProp = {
   image: string;
@@ -10,9 +10,11 @@ type ChatProp = {
 };
 
 const Chat = ({ online, image, full_name, email, blackListed }: ChatProp) => {
-  const navigate = useNavigate();
+  const [contactStatus, setContactStatus] = useSearchParams();
   useEffect(() => {
-    navigate(`./${email}?blackListed=${blackListed}`);
+    setContactStatus((prevParams) => {
+      return { ...prevParams, blackListed: blackListed };
+    });
   }, [blackListed]);
   return (
     <NavLink
