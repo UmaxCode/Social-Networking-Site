@@ -36,7 +36,7 @@ public class ChatMessagingService {
         Contact senderContact = senderContactOptional.get();
 
         if(senderContact.getContactState() == Utilities.ContactState.BLACKLIST){
-            throw new IllegalArgumentException("You can't send message to a black listed user");
+            return ChatMessage.builder().chatId(null).content("You can't send message to a black listed user").build();
         }
 
         Optional<Contact> receiverContactOptional = contactService.findUserContact(message.receiverEmail(), message.senderEmail());

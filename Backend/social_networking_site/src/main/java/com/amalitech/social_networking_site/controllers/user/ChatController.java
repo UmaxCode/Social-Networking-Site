@@ -36,8 +36,13 @@ public class ChatController {
             @Payload CMessage message
     ) {
 
-             var processedMessage = chatMessagingService.save(message);
-             messagingTemplate.convertAndSendToUser(message.receiverEmail(), "queue/messages", processedMessage);
+             try {
+                 var processedMessage = chatMessagingService.save(message);
+                 messagingTemplate.convertAndSendToUser(message.receiverEmail(), "queue/messages", processedMessage);
+             }catch (Exception err){
+                 messagingTemplate.convertAndSendToUser(message.senderEmail(), "queue/messages", ChatMessage.builder().chatId(null).content(err.getMessage()).build());
+
+             }
 
 
     }

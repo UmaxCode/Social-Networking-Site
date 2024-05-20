@@ -129,7 +129,6 @@ public class UserAuthService {
 
         Optional<User> optionalUser = userRepository.findByEmail(email);
 
-        String username = null;
         User savedUser;
 
         if (optionalUser.isEmpty()) {
@@ -146,10 +145,14 @@ public class UserAuthService {
 
             var profile = UserProfile.builder()
                     .user(savedUser)
-
+                    .onlineStatus(false)
                     .build();
 
             profileRepository.save(profile);
+
+            savedUser.setProfile(profile);
+
+            userRepository.save(savedUser);
 
 
         }else {
