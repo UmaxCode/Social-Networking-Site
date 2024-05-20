@@ -70,7 +70,9 @@ const ChatContainer = () => {
 
                   <div className="me-3 h-[30px] w-[30px]">
                     <img
-                      src={profile === null ? avataImage : (profile as string)}
+                      src={`${
+                        profile === "null" ? avataImage : (profile as string)
+                      }`}
                       alt=""
                       className="h-[100%] w-[100%] rounded-full"
                     />
@@ -115,7 +117,7 @@ const ChatContainer = () => {
                     })
                   )}
 
-                  {filteredUserContacts.length === 0 ? (
+                  {searchParams ? (
                     <p className="text-center">No search results found</p>
                   ) : null}
                 </div>

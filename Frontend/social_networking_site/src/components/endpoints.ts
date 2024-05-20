@@ -1,5 +1,5 @@
 // const baseURL = "https://umaxconnect.onrender.com/";
-const baseURL = "http://localhost:3001/";
+const baseURL = "http://localhost:8080/";
 
 const backendEndpoints = {
   register: `${baseURL}auth/register`,

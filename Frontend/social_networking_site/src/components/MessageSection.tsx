@@ -14,9 +14,9 @@ import { WebSocketContextData } from "../containers/WebSocketConnection";
 import ActionButton from "./ActionButton";
 import backendEndpoints from "./endpoints";
 
-type File = {
+type FileType = {
   fileSeleted: boolean;
-  file: Blob;
+  file: File | null;
 };
 
 type Message = {
@@ -33,7 +33,7 @@ const MessageSection = () => {
 
   const params = useParams();
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const selectedContact = userContacts?.filter(
     (contact) => contact.email === params.chatId
@@ -49,9 +49,9 @@ const MessageSection = () => {
 
   const navigate = useNavigate();
 
-  const [fileSeletion, setFilSelection] = useState<File>({
+  const [fileSeletion, setFilSelection] = useState<FileType>({
     fileSeleted: false,
-    file: new Blob(),
+    file: null,
   });
 
   useEffect(() => {
@@ -154,7 +154,7 @@ const MessageSection = () => {
     setFilSelection({
       ...fileSeletion,
       ["fileSeleted"]: false,
-      ["file"]: new Blob(),
+      ["file"]: null,
     });
   };
 
@@ -311,7 +311,7 @@ const MessageSection = () => {
                       action=""
                       onSubmit={(event) => {
                         event.preventDefault();
-                        sendFile(fileSeletion.file);
+                        sendFile(fileSeletion.file as File);
                       }}
                     >
                       <ActionButton

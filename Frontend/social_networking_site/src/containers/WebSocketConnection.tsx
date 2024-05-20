@@ -136,7 +136,7 @@ const WebSocketConnection = () => {
       navigate("/");
     }
 
-    const socket = new WebSocket("ws://localhost:3001/ws");
+    const socket = new WebSocket(`ws://localhost:8080/ws`);
 
     const stompClient = over(socket);
 
