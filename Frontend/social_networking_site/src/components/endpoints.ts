@@ -1,7 +1,8 @@
-// const baseURL = "https://umaxconnect.onrender.com/";
-const baseURL = "http://localhost:8080/";
+const baseURL = "https://umaxconnect.onrender.com/";
+// const baseURL = "http://localhost:8080/";
 
 const backendEndpoints = {
+  websocket_url: "ws://umaxconnect.onrender.com/ws",
   register: `${baseURL}auth/register`,
   login: `${baseURL}auth/authenticate`,
   forgot_password: `${baseURL}auth/password_reset`,
