@@ -2,7 +2,7 @@ import { useFormBinding } from "../hooks/useFormBinding";
 import AlternateAuthentication from "./AlternateAuthentication";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PasswordInput from "./PasswordInput";
-import { useEffect } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 
 import { AuthData } from "../contexts/AuthWrapper";
