@@ -12,10 +12,11 @@ import { UserContact } from "../containers/ChatContainer";
 import { AuthData } from "../contexts/AuthWrapper";
 import { Client } from "stompjs";
 
-type File = {
+type FileType = {
   fileSeleted: boolean;
-  file: Blob;
+  file: File | null;
 };
+
 
 type Message = {
   receiverEmail: string;
@@ -45,7 +46,7 @@ const MessageSection = () => {
 
   const [fileSeletion, setFilSelection] = useState<File>({
     fileSeleted: false,
-    file: new Blob(),
+    file: null,
   });
 
   useEffect(() => {
@@ -111,7 +112,7 @@ const MessageSection = () => {
     }
   }
 
-  function sendFile(file: Blob) {
+  function sendFile(file: File) {
     return null;
   }
 
@@ -288,7 +289,9 @@ const MessageSection = () => {
                     <button
                       type="button"
                       className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                      onClick={() => closeModal()}
+                      onClick={() => {
+                        sendFile(fileSelection.file as File)
+                        closeModal()}}
                     >
                       Send
                     </button>
