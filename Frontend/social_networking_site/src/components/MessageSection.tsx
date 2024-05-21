@@ -113,7 +113,12 @@ const MessageSection = () => {
   }
 
   function sendFile(file: File) {
-    return null;
+     setSendFileReq(true);
+    setTimeout(() => {
+      console.log(file);
+      closeModal();
+      setSendFileReq(false);
+    }, 3000);
   }
 
   const openModal = (event: any) => {
