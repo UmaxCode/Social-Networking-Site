@@ -11,6 +11,8 @@ import { Dialog, Transition } from "@headlessui/react";
 import { UserContact } from "../containers/ChatContainer";
 import { AuthData } from "../contexts/AuthWrapper";
 import { Client } from "stompjs";
+import ActionButton from "./ActionButton";
+
 
 type FileType = {
   fileSeleted: boolean;
@@ -139,7 +141,7 @@ const MessageSection = () => {
     setFilSelection({
       ...fileSeletion,
       ["fileSeleted"]: false,
-      ["file"]: new Blob(),
+      ["file"]: null
     });
   };
 
@@ -293,15 +295,19 @@ const MessageSection = () => {
                     >
                       cancel
                     </button>
-                    <button
-                      type="button"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                      onClick={() => {
-                        sendFile(fileSelection.file as File)
-                        closeModal()}}
+                    <form
+                      action=""
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        sendFile(fileSeletion.file as File);
+                      }}
                     >
-                      Send
-                    </button>
+                      <ActionButton
+                        text="save"
+                        reqSent={sendFileReq}
+                        styles="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                      />
+                    </form>
                   </div>
                 </Dialog.Panel>
               </Transition.Child>
