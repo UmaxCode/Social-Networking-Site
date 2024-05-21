@@ -14,13 +14,13 @@ type ContextValue = {
 };
 
 const initialContextValue: ContextValue = {
-  login: function (token: string): void {},
+  login: function (token: string): void {console.log(token)},
   logout: function (): void {},
   authenticate: {
     token: null,
     isAuthenticated: false,
   },
-  setProfilePic: function (url: string): void {},
+  setProfilePic: function (url: string): void {console.log(token)},
   profile: null,
 };
 
