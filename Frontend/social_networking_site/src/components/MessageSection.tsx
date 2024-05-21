@@ -33,7 +33,9 @@ const MessageSection = () => {
   const selectedContact = userContacts.filter(
     (contact) => contact.email === params.chatId
   )[0];
-
+  
+  const [sendFileReq, setSendFileReq] = useState(false);
+  
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
 
   const inputFile = useRef<HTMLInputElement>(null);
