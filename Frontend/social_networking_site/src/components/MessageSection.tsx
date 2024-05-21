@@ -44,7 +44,7 @@ const MessageSection = () => {
 
   const navigate = useNavigate();
 
-  const [fileSeletion, setFilSelection] = useState<File>({
+   const [fileSeletion, setFilSelection] = useState<FileType>({
     fileSeleted: false,
     file: null,
   });
