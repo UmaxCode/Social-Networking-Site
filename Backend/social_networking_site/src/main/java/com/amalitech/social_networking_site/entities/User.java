@@ -3,10 +3,7 @@ package com.amalitech.social_networking_site.entities;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
 
@@ -16,11 +13,12 @@ import static com.amalitech.social_networking_site.utilities.Utilities.Role;
 
 
 @Builder
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "_user")
+@Table(name = "users")
 public class User {
 
     @Id
@@ -42,7 +40,7 @@ public class User {
 
     @OneToOne(mappedBy = "user")
     @JsonManagedReference
-    @Cascade(CascadeType.ALL )
+    @Cascade(CascadeType.ALL)
     private UserProfile profile;
 
     private Boolean isActive;

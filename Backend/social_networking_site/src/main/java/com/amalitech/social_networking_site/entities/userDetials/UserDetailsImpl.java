@@ -1,5 +1,6 @@
 package com.amalitech.social_networking_site.entities.userDetials;
 
+import com.amalitech.social_networking_site.entities.User;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -9,30 +10,25 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
-import static com.amalitech.social_networking_site.utilities.Utilities.Role;
-
 @RequiredArgsConstructor
 @Builder
 public class UserDetailsImpl implements UserDetails {
 
-    private final String email;
-    private final String password;
-    private final Role role;
-
+    private transient User user;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(this.role.name()));
+        return List.of(new SimpleGrantedAuthority(user.getRole().toString()));
     }
 
     @Override
     public String getPassword() {
-        return this.password;
+        return user.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return this.email;
+        return user.getUsername();
     }
 
     @Override
@@ -52,6 +48,6 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return user.getIsActive();
     }
 }
