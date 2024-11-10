@@ -1,7 +1,6 @@
 package com.amalitech.social_networking_site.filters;
 
 import com.amalitech.social_networking_site.services.JWTAuthenticationService;
-import static com.amalitech.social_networking_site.utilities.Utilities.*;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,8 +14,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
+
+import static com.amalitech.social_networking_site.utilities.Utilities.TokenSubject;
 
 @Component
 @RequiredArgsConstructor
@@ -24,7 +26,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
     private final JWTAuthenticationService jwtAuthenticationService;
     private final UserDetailsService userDetailsService;
-
+    private final HandlerExceptionResolver handlerExceptionResolver;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
@@ -37,34 +39,32 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         }
         jwtToken = authHeader.substring(7);
 
-       try {
-           String userEmail = jwtAuthenticationService.extractUserEmail(jwtToken);
+        try {
+            String userEmail = jwtAuthenticationService.extractUserEmail(jwtToken);
 
-           if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-               UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
-               if (jwtAuthenticationService.isValidToken(jwtToken, TokenSubject.LOGIN)) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+                if (jwtAuthenticationService.isValidToken(jwtToken, TokenSubject.LOGIN)) {
 
-                   UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                           userDetails,
-                           null,
-                           userDetails.getAuthorities()
-                   );
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
 
-                   authToken.setDetails(
-                           new WebAuthenticationDetailsSource().buildDetails(request)
-                   );
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
 
-                   SecurityContextHolder.getContext().setAuthentication(authToken);
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
 
-               }
-           }
+                }
+            }
 
-
-           filterChain.doFilter(request, response);
-       }catch (Exception err){
-
-           throw new IllegalArgumentException(err.getMessage());
-       }
+            filterChain.doFilter(request, response);
+        } catch (Exception ex) {
+            handlerExceptionResolver.resolveException(request, response, null, ex);
+        }
     }
 }
