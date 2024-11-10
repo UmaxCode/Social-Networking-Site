@@ -43,7 +43,8 @@ public class User {
     @Cascade(CascadeType.ALL)
     private UserProfile profile;
 
-    private Boolean isActive;
+    @Builder.Default
+    private Boolean isActive = Boolean.FALSE;
 
     @OneToMany(mappedBy = "owner")
     @JsonManagedReference
