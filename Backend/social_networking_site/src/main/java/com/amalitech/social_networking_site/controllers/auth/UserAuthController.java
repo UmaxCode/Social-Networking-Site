@@ -3,14 +3,12 @@ package com.amalitech.social_networking_site.controllers.auth;
 import com.amalitech.social_networking_site.dto.requests.auth.PasswordResetRequest;
 import com.amalitech.social_networking_site.dto.requests.auth.UserAuthenticationRequest;
 import com.amalitech.social_networking_site.dto.requests.auth.UserCreationRequest;
-import com.amalitech.social_networking_site.dto.response.ErrorMessage;
-import com.amalitech.social_networking_site.dto.response.SuccessMessage;
+import com.amalitech.social_networking_site.dto.response.SuccessResponse;
 import com.amalitech.social_networking_site.services.UserAuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
@@ -20,61 +18,41 @@ public class UserAuthController {
 
     private final UserAuthService userAuthService;
 
-    @PostMapping("/register")
-    public ResponseEntity<?> signup(@RequestBody UserCreationRequest userData) {
+    @PostMapping("/signup")
+    public ResponseEntity<SuccessResponse> signup(@RequestBody UserCreationRequest userData) throws Exception {
 
-        try {
-            String message = userAuthService.register(userData);
-            return ResponseEntity.ok(new SuccessMessage(message));
-        } catch (Exception err) {
-            return ResponseEntity.status(400).body(new ErrorMessage(err.getMessage()));
-        }
+        String message = userAuthService.register(userData);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(SuccessResponse.builder()
+                        .message(message)
+                        .build());
     }
 
-    @PostMapping("/authenticate")
-    public ResponseEntity<?> login(@RequestBody UserAuthenticationRequest userData) {
+    @PostMapping("/login")
+    public ResponseEntity<SuccessResponse> login(@RequestBody UserAuthenticationRequest userData) {
 
-        try {
-            var message = userAuthService.authenticate(userData);
-            return ResponseEntity.ok(message);
-        } catch (Exception err) {
-            return ResponseEntity.status(400).body(new ErrorMessage(err.getMessage()));
-        }
+        var response = userAuthService.authenticate(userData);
+
+        return ResponseEntity.ok(SuccessResponse.builder()
+                .data(response)
+                .build());
     }
 
     @GetMapping("/account_verification/{token}")
     public RedirectView emailVerification(@PathVariable String token) {
 
-        try {
-            userAuthService.emailVerification(token);
-            RedirectView redirectView = new RedirectView();
-            redirectView.setUrl("http://localhost:3000/");
-            return redirectView;
-        } catch (Exception err) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, err.getMessage());
-        }
+        return userAuthService.emailVerification(token);
     }
 
-    @PutMapping("/password_reset")
-    public ResponseEntity<?> passwordReset(@RequestBody PasswordResetRequest userData){
+    @PatchMapping("/password_reset")
+    public ResponseEntity<SuccessResponse> passwordReset(@RequestBody PasswordResetRequest userData) throws Exception {
 
-        try {
-             var message = userAuthService.passwordReset(userData.email());
-             return ResponseEntity.ok(new SuccessMessage(message));
-        }catch (Exception err){
-            return ResponseEntity.status(400).body(new ErrorMessage(err.getMessage()));
-        }
+        var response = userAuthService.passwordReset(userData.email());
+
+        return ResponseEntity.ok(SuccessResponse.builder()
+                .message(response)
+                .build());
 
     }
-
-    @GetMapping("/oauth_google_callback")
-    public ResponseEntity<?> GoogleCallback(@RequestParam("code") String code) {
-        try {
-            var response = userAuthService.handleGoogleCallback(code);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception err) {
-            return ResponseEntity.status(400).body(new ErrorMessage(err.getMessage()));
-        }
-    }
-
 }
